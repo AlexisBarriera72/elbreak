@@ -1,0 +1,217 @@
+{
+  "_comentario": "Fuente única de precios. Cambia un precio aquí y cambia en toda la página, en el carrito y en el mensaje de WhatsApp. Precios de los tableros impresos (agosto 2026).",
+
+  "grupos": [
+    {
+      "id": "hamburguesas",
+      "titulo": "Hamburguesas",
+      "nota": "Todas salen con papas fritas.",
+      "platos": [
+        {
+          "id": "burger-el-break",
+          "nombre": "El Break Burger",
+          "precio": 9,
+          "desc": "Carne de res, lechuga, tomate, cebolla, bacon caramelizado, pepinillo y salsa especial. Servida en pan mayorca.",
+          "foto": null
+        },
+        {
+          "id": "burger-caramelizado",
+          "nombre": "Burger Caramelizado",
+          "precio": 10,
+          "desc": "Carne de res, tocineta, onion ring, cebollas caramelizadas y salsa BBQ.",
+          "foto": "burger-caramelizado.jpg",
+          "alt": "Burger Caramelizado sostenida frente al mar, con queso suizo, setas y tocineta.",
+          "ancho": 728,
+          "alto": 493
+        },
+        {
+          "id": "chicken-waffle-burger",
+          "nombre": "Chicken Waffle Burger",
+          "precio": 10,
+          "desc": "Pollo con crujiente empane sabor a waffle, lechuga, tomate, salsa ranch, hot honey y bacon caramelizado. Servida en pan brioche.",
+          "foto": "sandwich-montecristo.jpg",
+          "alt": "Chicken Waffle Burger en su envase, en la playa.",
+          "ancho": 340,
+          "alto": 320
+        }
+      ]
+    },
+    {
+      "id": "sandwiches",
+      "titulo": "Sándwiches",
+      "nota": "Todos salen con papas fritas.",
+      "platos": [
+        {
+          "id": "crispy-chicken-caesar",
+          "nombre": "Crispy Chicken Caesar",
+          "precio": 9,
+          "desc": "Pechuga empanada, lechuga, tomate, bacon, crutones molidos, queso parmesano y aderezo caesar hecho en casa.",
+          "foto": "sandwich-crispy.jpg",
+          "alt": "Sándwich de pechuga empanada con tocineta en pan brioche, servido con papas fritas.",
+          "ancho": 692,
+          "alto": 621
+        },
+        {
+          "id": "el-italiano",
+          "nombre": "El Italiano",
+          "precio": 10,
+          "desc": "Pechuga empanada, peperoni, salsa de pimentón, espinaca, tomate, mozzarella y salsa marinara.",
+          "foto": null
+        },
+        {
+          "id": "pulled-pork-bbq",
+          "nombre": "Pulled Pork BBQ",
+          "precio": 10,
+          "desc": "Pulled pork, jamón, lechuga, tomate, bacon y onion rings con salsa de crema de ajo.",
+          "foto": null
+        }
+      ]
+    },
+    {
+      "id": "wraps",
+      "titulo": "Wraps",
+      "nota": "",
+      "platos": [
+        {
+          "id": "wrap-caesar",
+          "nombre": "Crispy Caesar Chicken",
+          "precio": 9,
+          "desc": "Pechuga empanada en panko, aderezo caesar, lechuga, tomate, pedazos de crutones, queso parmesano y bacon.",
+          "foto": null
+        },
+        {
+          "id": "wrap-el-break",
+          "nombre": "El Break Wrap",
+          "precio": 9,
+          "desc": "Churrasco, lechuga, tomate, tortilla chips, queso rallado, trocitos de bacon, salsa de pimentón y salsa de cilantro.",
+          "foto": null
+        }
+      ]
+    },
+    {
+      "id": "freidora",
+      "titulo": "De la freidora",
+      "nota": "",
+      "platos": [
+        {
+          "id": "tenders",
+          "nombre": "Tenders con Papas",
+          "precio": 8,
+          "desc": "Tenders de pechuga, empanado regular o waffle. Elige tu salsa: cilantro/lime, ranch, BBQ o mayoketchup.",
+          "foto": "tenders.jpg",
+          "alt": "Tenders de pechuga empanados con papas fritas en envase, en la playa.",
+          "ancho": 630,
+          "alto": 676
+        }
+      ]
+    },
+    {
+      "id": "bowls",
+      "titulo": "Bowls",
+      "nota": "Todos los bowls de la casa a $10.",
+      "platos": [
+        {
+          "id": "bowl-argentino",
+          "nombre": "Bowl Argentino",
+          "precio": 10,
+          "desc": "Arroz con cilantro, trozos de churrasco, pechuga, chorizo, salsa chimichurri, sour cream y salsa de cilantro.",
+          "foto": "bowl-churrasco.jpg",
+          "alt": "Bowl con arroz y trozos de churrasco, sostenido en la playa junto a una tarjeta de versículo.",
+          "ancho": 900,
+          "alto": 736
+        },
+        {
+          "id": "bowl-boricua",
+          "nombre": "Bowl Boricua",
+          "precio": 10,
+          "desc": "Arroz mamposteado, carne frita encebollada, trozos de aguacate, amarillo, salsa mayoketchup y sour cream.",
+          "foto": null
+        },
+        {
+          "id": "bowl-paisa",
+          "nombre": "Bowl Paisa",
+          "precio": 10,
+          "desc": "Trozos de pechuga al grill, chicharrón, chorizo, arroz, habichuelas, trozos de aguacate, amarillo y salsa de ajo.",
+          "foto": null
+        },
+        {
+          "id": "bowl-mexicano",
+          "nombre": "Bowl Mexicano",
+          "precio": 10,
+          "desc": "Arroz, frijoles, queso rallado, tortilla chips, pernil desmenuzado, aguacate, esquite, sour cream y pico de gallo.",
+          "foto": null
+        },
+        {
+          "id": "bowl-el-break",
+          "nombre": "Bowl El Break",
+          "precio": 10,
+          "desc": "Papa majada, queso rallado, queso cheddar, trozos de pechuga, trozos de amarillos, sour cream, pico de gallo, tocineta y papitas mini.",
+          "foto": null
+        }
+      ]
+    }
+  ],
+
+  "creadorBowl": {
+    "foto": "bowl-pasta.jpg",
+    "fotoAlt": "Bowl de pasta con pechuga empanada, setas y queso parmesano.",
+    "fotoPie": "Pasta Alfredo con pechuga empanada y parmesano.",
+    "toppingsIncluidos": 3,
+    "toppingExtra": 0.5,
+    "bases": [
+      "Arroz blanco con habichuelas",
+      "Arroz con cilantro",
+      "Arroz mamposteado",
+      "Pasta Alfredo",
+      "Pasta Marinara",
+      "Pasta pimentón",
+      "Pesto aioli",
+      "Papa majada",
+      "Ensalada de casa"
+    ],
+    "proteinas": [
+      { "nombre": "Pechuga al grill", "precio": 10 },
+      { "nombre": "Pechuga empanada", "precio": 10 },
+      { "nombre": "Pernil desmenuzado", "precio": 10 },
+      { "nombre": "Churrasco", "precio": 11.5 }
+    ],
+    "toppings": [
+      "Pico de gallo",
+      "Queso rallado",
+      "Queso parmesano",
+      "Chimichurri",
+      "Sour cream",
+      "Cebollas y pimientos salteados",
+      "Aguacate",
+      "Trocitos de amarillos",
+      "Salsa cilantro lime",
+      "Salsa de pimentón rojo"
+    ]
+  },
+
+  "acompanantes": [
+    {
+      "id": "sides",
+      "titulo": "Sides",
+      "precioFijo": 2.5,
+      "items": [
+        { "id": "tostones", "nombre": "Tostones regular (4)" },
+        { "id": "tostones-panas", "nombre": "Tostones de panas (4)" },
+        { "id": "papas-fritas", "nombre": "Papas fritas" },
+        { "id": "amarillos", "nombre": "Amarillos (4)" },
+        { "id": "nuditos", "nombre": "Nuditos de ajo y parmesano (3)" }
+      ]
+    },
+    {
+      "id": "bebidas",
+      "titulo": "Bebidas",
+      "precioFijo": null,
+      "items": [
+        { "id": "pepsi", "nombre": "Pepsi", "precio": 1.5 },
+        { "id": "sprite", "nombre": "Sprite", "precio": 1.5 },
+        { "id": "coca-zero", "nombre": "Coca-Cola Zero", "precio": 1.5 },
+        { "id": "agua", "nombre": "Agua", "precio": 1 }
+      ]
+    }
+  ]
+}

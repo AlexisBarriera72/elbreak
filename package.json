@@ -1,0 +1,15 @@
+{
+  "name": "elbreak-food-truck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Carta y órdenes de El Break Food Truck — Yauco, Puerto Rico.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node src/build.js",
+    "dev": "node src/dev.js",
+    "test": "node --test"
+  }
+}

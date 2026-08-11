@@ -1,0 +1,20 @@
+# Lo que genera el build. Los hosts lo reconstruyen en cada despliegue.
+dist/
+
+# Variables locales: aquí viven el token del bot y el id del chat.
+.env
+.env.local
+.dev.vars
+
+# Cachés de los hosts
+.vercel/
+.netlify/
+.wrangler/
+
+# Node (este proyecto no tiene dependencias, pero por si acaso)
+node_modules/
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db

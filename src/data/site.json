@@ -1,0 +1,52 @@
+{
+  "_comentario": "Datos del negocio. El horario alimenta el estado en vivo, el pie de página y el marcado para Google.",
+
+  "nombre": "El Break Food Truck",
+  "lema": "Tu break perfecto",
+  "descripcion": "Cocina criolla y comfort food desde un truck en Yauco. Bowls, burgers y sándwiches hechos a mano.",
+  "url": "https://elbreak.pages.dev",
+
+  "telefono": "787-204-8105",
+  "telefonoE164": "+17872048105",
+  "whatsapp": "17872048105",
+
+  "zona": "Avenida Fidel Vélez, Yauco",
+  "calle": "Avenida Fidel Vélez",
+  "ciudad": "Yauco",
+  "region": "PR",
+  "pais": "US",
+  "entrega": "Recogido o delivery en el área cercana.",
+  "mapaUrl": "https://www.google.com/maps/search/?api=1&query=Avenida+Fidel+Velez+Yauco+Puerto+Rico",
+
+  "instagram": "el_break_food_truck",
+  "instagramUrl": "https://instagram.com/el_break_food_truck",
+
+  "avisoAlergias": "Toda salsa es hecha a mano. Si eres alérgico a algo, notifícalo al ordenar.",
+
+  "zonaHoraria": "America/Puerto_Rico",
+  "horario": {
+    "3": { "abre": "11:00", "cierra": "14:00" },
+    "4": { "abre": "11:00", "cierra": "14:00" },
+    "5": { "abre": "11:00", "cierra": "14:00" }
+  },
+
+  "versiculo": {
+    "texto": "Agradece, alégrate y ora, lo que sucede es la voluntad de Dios.",
+    "cita": "1 Tesalonicenses 5:16-18"
+  },
+
+  "valores": [
+    {
+      "titulo": "Ingredientes frescos",
+      "texto": "Compramos y preparamos para el día. Nada se queda de un servicio a otro."
+    },
+    {
+      "titulo": "Salsas hechas a mano",
+      "texto": "El chimichurri, el mayoketchup y el cilantro lime se hacen aquí, no salen de un pote."
+    },
+    {
+      "titulo": "Una tarjeta en cada bowl",
+      "texto": "Cada orden sale con un versículo. Es parte del break, no un extra."
+    }
+  ]
+}
