@@ -17,10 +17,21 @@
 /404.html
   Cache-Control: public, max-age=0, must-revalidate
 
-# Fotos, tipografías, CSS y JS: un año en caché.
-/assets/*
+# Fotos y tipografías: un año, y no se vuelve a preguntar. Se puede porque
+# nunca se editan en el sitio — se sube un archivo nuevo con otro nombre.
+/assets/img/*
   Cache-Control: public, max-age=31536000, immutable
 
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
   Access-Control-Allow-Origin: *
+
+# CSS y JS: se revalidan siempre. Estos SÍ se editan y conservan el nombre,
+# así que "immutable" dejaría a quien ya visitó el sitio con la versión vieja
+# durante un año, sin forma de avisarle. El navegador pregunta, el servidor
+# contesta 304 si no ha cambiado, y son 52 KB entre todos: sale barato.
+/assets/js/*
+  Cache-Control: public, no-cache
+
+/assets/css/*
+  Cache-Control: public, no-cache
