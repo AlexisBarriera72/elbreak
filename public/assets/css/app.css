@@ -39,6 +39,7 @@
 	--canal: clamp(1.25rem, 5vw, 3.5rem);
 	--radio: 18px;
 	--radio-lg: 28px;
+	--alto-toldo: 26px;
 
 	--sombra: 0 2px 4px rgb(20 38 43 / 6%), 0 12px 28px -8px rgb(20 38 43 / 14%);
 	--sombra-alta: 0 4px 8px rgb(20 38 43 / 8%), 0 28px 56px -16px rgb(20 38 43 / 26%);
@@ -139,7 +140,9 @@ p {
 	--radio-festón: 16px;
 	--ceja: 10px;
 
-	height: 26px;
+	/* Encima del fondo del encabezado, que se detiene justo antes de aquí. */
+	position: relative;
+	height: var(--alto-toldo);
 	background: repeating-linear-gradient(
 		90deg,
 		var(--sol) 0 var(--franja),
@@ -161,6 +164,21 @@ p {
 	position: sticky;
 	top: 0;
 	z-index: 100;
+}
+
+/*
+ * El fondo del encabezado se pinta aquí, no en .cabecera, y se para justo
+ * donde empieza el toldo.
+ *
+ * Antes lo pintaba .cabecera entera. El toldo está recortado con una máscara,
+ * así que los huecos entre festones sí eran transparentes — pero detrás
+ * quedaba el crema del encabezado, y por eso se veían blancos. Dejando esa
+ * franja sin fondo, por los huecos se ve la sección de abajo.
+ */
+.cabecera::before {
+	content: '';
+	position: absolute;
+	inset: 0 0 var(--alto-toldo) 0;
 	background: color-mix(in srgb, var(--crema) 88%, transparent);
 	backdrop-filter: saturate(180%) blur(14px);
 	-webkit-backdrop-filter: saturate(180%) blur(14px);
@@ -168,9 +186,14 @@ p {
 	transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.cabecera[data-pegada='si'] {
+.cabecera[data-pegada='si']::before {
 	border-bottom-color: var(--linea);
 	box-shadow: 0 6px 24px -18px rgb(20 38 43 / 60%);
+}
+
+/* Positioned, para quedar por encima del fondo sin recurrir a z-index. */
+.cabecera__fila {
+	position: relative;
 }
 
 .cabecera__fila {
