@@ -114,9 +114,64 @@ async function enviar(modo) {
 	}
 }
 
+/**
+ * Dice qué falta por poner en Vercel.
+ *
+ * Leer una excepción que no existe y no poder leer nada se parecen demasiado:
+ * los dos acaban en «hoy no hay nada». Esto los separa sin enseñar ningún
+ * valor, solo si está puesto o no.
+ */
+async function comprobar() {
+	const clave = campoClave.value;
+
+	if (!clave) {
+		decir('Escribe la clave primero.', 'error');
+		campoClave.focus();
+		return;
+	}
+
+	ocupado(true);
+	decir('Comprobando…');
+
+	try {
+		const respuesta = await fetch('/api/estado', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ clave, modo: 'diagnostico' })
+		});
+
+		const datos = await respuesta.json().catch(() => ({}));
+
+		if (!respuesta.ok) {
+			decir(datos.error || 'No se pudo comprobar.', 'error');
+			return;
+		}
+
+		const puesto = datos.diagnostico || {};
+		const faltan = ['GLOBAL_CONFIG', 'VERCEL_API_TOKEN'].filter((v) => !puesto[v]);
+
+		if (faltan.length) {
+			decir(
+				`Falta poner en Vercel: ${faltan.join(' y ')}. ` +
+					'Settings → Environment Variables, y después vuelve a desplegar.',
+				'error'
+			);
+		} else {
+			decir('La clave vale y está todo puesto. Los botones deberían funcionar.', 'bien');
+		}
+	} catch (e) {
+		decir('Sin conexión. Inténtalo otra vez.', 'error');
+	} finally {
+		ocupado(false);
+	}
+}
+
 formulario.addEventListener('submit', (e) => e.preventDefault());
 botones.forEach((boton) => {
-	boton.addEventListener('click', () => enviar(boton.dataset.accion));
+	boton.addEventListener('click', () => {
+		if (boton.dataset.accion === 'diagnostico') comprobar();
+		else enviar(boton.dataset.accion);
+	});
 });
 
 consultar();

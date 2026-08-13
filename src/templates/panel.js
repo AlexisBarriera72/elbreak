@@ -112,6 +112,9 @@ export function paginaPanel(sitio) {
 					<button type="button" class="boton boton--linea" data-accion="normal">
 						Volver al horario normal
 					</button>
+					<button type="button" class="boton boton--linea" data-accion="diagnostico">
+						Comprobar configuración
+					</button>
 				</div>
 			</div>
 		</form>

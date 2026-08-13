@@ -199,6 +199,23 @@ export default async function handler(peticion) {
 		return json({ error: 'Clave incorrecta.' }, 401);
 	}
 
+	// Qué hay puesto y qué falta. Va detrás de la clave, así que no cuenta
+	// nada a quien no debería saberlo, y nunca devuelve valores: solo si están.
+	if (cuerpo.modo === 'diagnostico') {
+		return json(
+			{
+				diagnostico: {
+					GLOBAL_CONFIG: Boolean(conexion(env)),
+					PANEL_CLAVE: true,
+					VERCEL_API_TOKEN: Boolean(env.VERCEL_API_TOKEN),
+					VERCEL_TEAM_ID: Boolean(env.VERCEL_TEAM_ID)
+				}
+			},
+			200,
+			{ 'cache-control': 'no-store' }
+		);
+	}
+
 	const hoy = fechaEnZona(ZONA);
 	let valor = null;
 
