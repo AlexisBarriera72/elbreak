@@ -87,3 +87,43 @@ test('schema.org sale en el formato que espera Google', () => {
 		'Friday 11:00-14:00'
 	]);
 });
+
+/* --- El interruptor de /panel ------------------------------------------- */
+
+// Miércoles 12:00 en Yauco: día de servicio, en plena hora de servicio.
+const MIERCOLES_MEDIODIA = new Date(Date.UTC(2026, 7, 12, 16, 0));
+
+test('sin cierre, un miércoles al mediodía está abierto', () => {
+	const estado = estadoServicio(horario, zonaHoraria, MIERCOLES_MEDIODIA);
+
+	assert.equal(estado.estado, 'abierto');
+	assert.equal(estado.etiqueta, 'Abierto ahora');
+});
+
+test('con el cierre puesto, ese mismo momento aparece cerrado', () => {
+	const estado = estadoServicio(horario, zonaHoraria, MIERCOLES_MEDIODIA, { cerradoHoy: true });
+
+	assert.equal(estado.estado, 'cerrado');
+	assert.equal(estado.etiqueta, 'Cerrado hoy');
+});
+
+test('el cierre dice cuándo se vuelve, sin repetir la cuenta del horario', () => {
+	const estado = estadoServicio(horario, zonaHoraria, MIERCOLES_MEDIODIA, { cerradoHoy: true });
+
+	// Jueves también es día de servicio, así que la vuelta es mañana.
+	assert.equal(estado.detalle, 'Hoy no salimos. Mañana abrimos a las 11:00 am.');
+});
+
+test('cerrar un viernes salta el fin de semana igual que siempre', () => {
+	const viernes = new Date(Date.UTC(2026, 7, 14, 16, 0));
+	const estado = estadoServicio(horario, zonaHoraria, viernes, { cerradoHoy: true });
+
+	assert.equal(estado.detalle, 'Hoy no salimos. Miércoles abrimos a las 11:00 am.');
+});
+
+test('el cierre no se contagia al día siguiente', () => {
+	// El mismo horario, un día después y sin el interruptor: todo normal.
+	const jueves = new Date(Date.UTC(2026, 7, 13, 16, 0));
+
+	assert.equal(estadoServicio(horario, zonaHoraria, jueves).etiqueta, 'Abierto ahora');
+});

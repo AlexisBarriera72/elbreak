@@ -6,7 +6,8 @@
  * lo que existe — mirar la carta y llamar.
  */
 
-import { estadoServicio } from './horario.js';
+import { estadoServicio, fechaEnZona } from './horario.js';
+import { versiculoDelDia } from './versiculo.js';
 import { precio } from './formato.js';
 import * as carrito from './carrito.js';
 
@@ -55,10 +56,14 @@ if (porRevelar.length) {
 
 const COLOR_PUNTO = { abierto: '#1f7a34', 'cierra-pronto': '#c98200', cerrado: '#8a9aa0' };
 
+// Lo enciende el dueño desde /panel. Empieza en false: si la consulta falla,
+// manda el horario de siempre y la página nunca se queda muda.
+let cerradoHoy = false;
+
 function pintarEstado() {
 	if (!datos.horario || !datos.zonaHoraria) return;
 
-	const estado = estadoServicio(datos.horario, datos.zonaHoraria);
+	const estado = estadoServicio(datos.horario, datos.zonaHoraria, new Date(), { cerradoHoy });
 
 	$$('[data-estado-vivo]').forEach((pildora) => {
 		pildora.dataset.estado = estado.estado;
@@ -76,8 +81,63 @@ function pintarEstado() {
 	});
 }
 
-pintarEstado();
-setInterval(pintarEstado, 60000);
+/* --- Versículo del día ---------------------------------------------------
+   El HTML trae el del día en que se compiló. Si el despliegue lleva semanas
+   parado, aquí lo corregimos al que toca hoy en Yauco.                      */
+
+function pintarVersiculo() {
+	if (!datos.versiculos || !datos.zonaHoraria) return;
+
+	const hoy = versiculoDelDia(datos.versiculos, datos.zonaHoraria);
+	if (!hoy) return;
+
+	const texto = $('[data-versiculo-texto]');
+	const cita = $('[data-versiculo-cita]');
+
+	if (texto) texto.textContent = hoy.texto;
+	if (cita) cita.textContent = hoy.cita;
+}
+
+/* Un solo latido para todo lo que depende de la hora: así la página que se
+   queda abierta cruza la medianoche y el mediodía sin recargar. */
+function refrescar() {
+	pintarEstado();
+	pintarVersiculo();
+}
+
+/* --- Cierre puntual ------------------------------------------------------
+   El dueño puede marcar desde /panel que hoy no sale. Se guarda la fecha, no
+   un sí/no, así que en cuanto deja de ser hoy el truck vuelve solo a su
+   horario: olvidarse de reabrir no deja el sitio cerrado para siempre.
+
+   Va después de pintar, no antes: si la red falla o la función no responde,
+   la página ya está enseñando el horario normal.                            */
+
+async function consultarCierre() {
+	if (!datos.zonaHoraria) return;
+
+	try {
+		const respuesta = await fetch('/api/estado', { headers: { accept: 'application/json' } });
+		if (!respuesta.ok) return;
+
+		const { cerrado } = await respuesta.json();
+		const hoy = typeof cerrado === 'string' && cerrado === fechaEnZona(datos.zonaHoraria);
+
+		if (hoy !== cerradoHoy) {
+			cerradoHoy = hoy;
+			refrescar();
+		}
+	} catch (e) {
+		// Sin respuesta, manda el horario de siempre.
+	}
+}
+
+refrescar();
+setInterval(refrescar, 60000);
+
+consultarCierre();
+// Cada diez minutos, por si el dueño lo marca con la página ya abierta.
+setInterval(consultarCierre, 600000);
 
 /* --- Creador de bowls ---------------------------------------------------- */
 
@@ -323,42 +383,27 @@ if (botonVaciar) {
 }
 
 /* --- Envío ---------------------------------------------------------------
-   WhatsApp es el camino principal: abre el chat del cliente con la orden ya
-   escrita. Además avisamos al dueño por Telegram si está configurado, para
-   que quede constancia aunque el cliente no llegue a darle a enviar.        */
-
-if (enlaceWA) {
-	enlaceWA.addEventListener('click', () => {
-		if (carrito.estaVacio()) return;
-
-		const orden = carrito.ordenJSON(datosCliente());
-
-		// No bloquea la ida a WhatsApp: si falla o no está configurado, da igual.
-		try {
-			const cuerpo = JSON.stringify(orden);
-			if (navigator.sendBeacon) {
-				navigator.sendBeacon('/api/order', new Blob([cuerpo], { type: 'application/json' }));
-			} else {
-				fetch('/api/order', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: cuerpo,
-					keepalive: true
-				}).catch(() => {});
-			}
-		} catch (e) {
-			/* el aviso es opcional; la orden va igual por WhatsApp */
-		}
-	});
-}
+   La orden va por WhatsApp desde el teléfono del cliente. No hay servidor de
+   por medio: el enlace ya lleva la orden escrita y solo hay que darle a
+   enviar.                                                                   */
 
 carrito.alCambiar(pintarCarrito);
 carrito.cargar();
 
 /* --- Utilidades ---------------------------------------------------------- */
 
+/**
+ * Escapa texto para meterlo en el HTML del carrito.
+ *
+ * Tiene que escapar también las comillas dobles: parte de lo que sale de aquí
+ * va dentro de un atributo (`aria-label="…"`), y un plato que se llamara
+ * `Burger "El Break"` rompería el atributo. El truco de textContent+innerHTML
+ * no escapa comillas, así que se hace a mano — igual que `e()` en el build.
+ */
 function escapar(texto) {
-	const d = document.createElement('div');
-	d.textContent = texto;
-	return d.innerHTML;
+	return String(texto ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
 }

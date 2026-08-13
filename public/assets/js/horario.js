@@ -70,12 +70,48 @@ export function momentoEnZona(zona, ahora = new Date()) {
 }
 
 /**
+ * Fecha civil en la zona indicada, como "2026-08-13".
+ *
+ * Hace falta para dos cosas que no pueden usar la fecha del visitante: saber
+ * qué versículo toca hoy y saber si el cierre que guardó el dueño es de hoy.
+ */
+export function fechaEnZona(zona, ahora = new Date()) {
+	const partes = new Intl.DateTimeFormat('en-CA', {
+		timeZone: zona,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit'
+	}).formatToParts(ahora);
+
+	const leer = (tipo) => (partes.find((p) => p.type === tipo) || {}).value || '';
+
+	return `${leer('year')}-${leer('month')}-${leer('day')}`;
+}
+
+/**
+ * Días transcurridos desde 1970-01-01, contados en la zona indicada.
+ * Es el número que hace girar el versículo: cambia una vez al día, a
+ * medianoche en Yauco, y es el mismo para todo el que abra la página.
+ */
+export function diaOrdinal(zona, ahora = new Date()) {
+	const [a, m, d] = fechaEnZona(zona, ahora).split('-').map(Number);
+	return Math.round(Date.UTC(a, m - 1, d) / 86400000);
+}
+
+/**
  * Estado del servicio.
+ *
+ * `opciones.cerradoHoy` es el interruptor del panel: cuando el dueño marca que
+ * hoy no sale, se ignora la ventana de hoy y se busca directamente el próximo
+ * día de servicio. Toda la cuenta de «cuándo volvemos» es la misma de siempre,
+ * así no hay dos versiones que puedan contradecirse.
+ *
  * @returns {{estado: 'abierto'|'cierra-pronto'|'cerrado', etiqueta: string, detalle: string}}
  */
-export function estadoServicio(horario, zona, ahora = new Date()) {
+export function estadoServicio(horario, zona, ahora = new Date(), opciones = {}) {
 	const { dia, minutos } = momentoEnZona(zona, ahora);
-	const hoy = horario[dia] || horario[String(dia)];
+	const cerradoHoy = Boolean(opciones.cerradoHoy);
+	const hoy = cerradoHoy ? null : horario[dia] || horario[String(dia)];
 
 	if (hoy) {
 		const abre = aMinutos(hoy.abre);
@@ -119,17 +155,18 @@ export function estadoServicio(horario, zona, ahora = new Date()) {
 
 		const nombre = DIAS[siguiente];
 		const cuando = salto === 1 ? 'Mañana' : nombre.charAt(0).toUpperCase() + nombre.slice(1);
+		const vuelta = `${cuando} abrimos a las ${horaLegible(ventana.abre)}.`;
 
 		return {
 			estado: 'cerrado',
-			etiqueta: 'Cerrado',
-			detalle: `${cuando} abrimos a las ${horaLegible(ventana.abre)}.`
+			etiqueta: cerradoHoy ? 'Cerrado hoy' : 'Cerrado',
+			detalle: cerradoHoy ? `Hoy no salimos. ${vuelta}` : vuelta
 		};
 	}
 
 	return {
 		estado: 'cerrado',
-		etiqueta: 'Cerrado',
+		etiqueta: cerradoHoy ? 'Cerrado hoy' : 'Cerrado',
 		detalle: 'Escríbenos por Instagram para saber cuándo abrimos.'
 	};
 }

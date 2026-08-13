@@ -27,11 +27,23 @@ function guardar() {
 	}
 }
 
+/** Una línea guardada solo vale si puede sumarse: si no, el total sale "$NaN". */
+function lineaValida(l) {
+	return (
+		l &&
+		typeof l.nombre === 'string' &&
+		l.nombre !== '' &&
+		Number.isFinite(l.precio) &&
+		Number.isFinite(l.cantidad) &&
+		l.cantidad > 0
+	);
+}
+
 export function cargar() {
 	try {
 		const crudo = localStorage.getItem(LLAVE);
 		const datos = crudo ? JSON.parse(crudo) : [];
-		lineas = Array.isArray(datos) ? datos.filter((l) => l && l.nombre && l.cantidad > 0) : [];
+		lineas = Array.isArray(datos) ? datos.filter(lineaValida) : [];
 	} catch (e) {
 		lineas = [];
 	}
@@ -143,16 +155,4 @@ export function mensajeOrden(datos = {}) {
 /** Enlace wa.me con la orden ya escrita. */
 export function enlaceWhatsApp(numero, datos = {}) {
 	return `https://wa.me/${numero}?text=${encodeURIComponent(mensajeOrden(datos))}`;
-}
-
-/** Orden en JSON, para la notificación al dueño (Telegram). */
-export function ordenJSON(datos = {}) {
-	return {
-		lineas: obtener(),
-		total: Number(total().toFixed(2)),
-		cliente: datos.nombre || '',
-		modo: datos.modo || 'recogido',
-		nota: datos.nota || '',
-		enviada: new Date().toISOString()
-	};
 }

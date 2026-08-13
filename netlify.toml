@@ -7,7 +7,3 @@
 
 # Las cabeceras de caché y seguridad van en public/_headers, que Netlify lee
 # desde la carpeta publicada. Así el mismo archivo sirve para Cloudflare Pages.
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"

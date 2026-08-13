@@ -96,13 +96,33 @@ test('el enlace de WhatsApp va codificado y al número correcto', () => {
 	assert.match(decodeURIComponent(url), /Burger Caramelizado/);
 });
 
-test('ordenJSON entrega lo que espera el aviso al dueño', () => {
-	carrito.agregar(BURGER, 2);
-	const orden = carrito.ordenJSON({ nombre: 'Ana', modo: 'delivery' });
+test('descarta las líneas corruptas de localStorage en vez de enseñar "$NaN"', () => {
+	const almacen = {
+		'elbreak.carrito.v1': JSON.stringify([
+			{ id: 'ok', nombre: 'Burger Caramelizado', precio: 10, cantidad: 2 },
+			{ id: 'sin-precio', nombre: 'Sin precio', precio: null, cantidad: 1 },
+			{ id: 'precio-texto', nombre: 'Precio en texto', precio: 'diez', cantidad: 1 },
+			{ id: 'sin-nombre', nombre: '', precio: 5, cantidad: 1 }
+		])
+	};
 
-	assert.equal(orden.total, 20);
-	assert.equal(orden.cliente, 'Ana');
-	assert.equal(orden.modo, 'delivery');
-	assert.equal(orden.lineas[0].cantidad, 2);
-	assert.ok(orden.enviada, 'lleva marca de tiempo');
+	globalThis.localStorage = {
+		getItem: (k) => (k in almacen ? almacen[k] : null),
+		setItem: (k, v) => {
+			almacen[k] = v;
+		},
+		removeItem: (k) => {
+			delete almacen[k];
+		}
+	};
+
+	try {
+		carrito.cargar();
+
+		assert.equal(carrito.obtener().length, 1, 'solo sobrevive la línea sumable');
+		assert.equal(carrito.total(), 20);
+		assert.equal(precio(carrito.total()), '$20', 'el total nunca sale como $NaN');
+	} finally {
+		delete globalThis.localStorage;
+	}
 });

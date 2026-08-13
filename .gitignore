@@ -1,7 +1,7 @@
 # Lo que genera el build. Los hosts lo reconstruyen en cada despliegue.
 dist/
 
-# Variables locales: aquí viven el token del bot y el id del chat.
+# Variables locales. Nunca se suben.
 .env
 .env.local
 .dev.vars

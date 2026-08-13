@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 
 import { paginaInicio } from './templates/pagina.js';
+import { paginaPanel } from './templates/panel.js';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, '..');
@@ -52,6 +53,7 @@ async function construir() {
 
 	const sitio = await leerJSON(join(raiz, 'src/data/site.json'));
 	const menu = await leerJSON(join(raiz, 'src/data/menu.json'));
+	const versiculos = (await leerJSON(join(raiz, 'src/data/versiculos.json'))).lista;
 
 	// Empezamos de cero para que no queden restos de una compilación anterior.
 	if (existsSync(salida)) await rm(salida, { recursive: true });
@@ -59,11 +61,14 @@ async function construir() {
 
 	await cp(join(raiz, 'public'), salida, { recursive: true });
 
-	const html = paginaInicio({ sitio, menu });
+	const html = paginaInicio({ sitio, menu, versiculos });
 	await writeFile(join(salida, 'index.html'), html, 'utf8');
 
 	// 404 con la misma cabecera y un camino de vuelta.
 	await writeFile(join(salida, '404.html'), pagina404(sitio), 'utf8');
+
+	// Panel del dueño. Ni se enlaza ni se indexa.
+	await writeFile(join(salida, 'panel.html'), paginaPanel(sitio), 'utf8');
 
 	const bytes = await pesar(salida);
 	const archivos = await inventario(salida);

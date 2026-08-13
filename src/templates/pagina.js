@@ -8,6 +8,7 @@
 
 import { precio } from '../../public/assets/js/formato.js';
 import { resumenHorario, horarioSchema } from '../../public/assets/js/horario.js';
+import { versiculoDelDia } from '../../public/assets/js/versiculo.js';
 
 /** Escapa texto para meterlo en el HTML. */
 const e = (s) =>
@@ -118,11 +119,15 @@ function bloqueAcompanantes(bloque) {
 
 /* --- Página ------------------------------------------------------------- */
 
-export function paginaInicio({ sitio, menu }) {
+export function paginaInicio({ sitio, menu, versiculos = [] }) {
 	const horario = resumenHorario(sitio.horario);
 	const bowls = menu.grupos.find((g) => g.id === 'bowls');
 	const carta = menu.grupos.filter((g) => g.id !== 'bowls');
 	const cb = menu.creadorBowl;
+
+	// El del día que se compiló. El navegador lo recalcula al abrir la página,
+	// así que un despliegue viejo no deja el versículo congelado.
+	const versiculo = versiculoDelDia(versiculos, sitio.zonaHoraria);
 
 	const schema = {
 		'@context': 'https://schema.org',
@@ -151,6 +156,7 @@ export function paginaInicio({ sitio, menu }) {
 		whatsapp: sitio.whatsapp,
 		zonaHoraria: sitio.zonaHoraria,
 		horario: sitio.horario,
+		versiculos,
 		creadorBowl: {
 			toppingsIncluidos: cb.toppingsIncluidos,
 			toppingExtra: cb.toppingExtra
@@ -364,10 +370,14 @@ export function paginaInicio({ sitio, menu }) {
 		<div class="seccion__cabeza" data-revela>
 			<p class="rotulo">Fe, familia y propósito</p>
 			<h2 class="seccion__titulo">Comida que nutre el cuerpo y el alma</h2>
-			<blockquote class="versiculo">
-				${e(sitio.versiculo.texto)}
-				<cite>${e(sitio.versiculo.cita)}</cite>
-			</blockquote>
+			${
+				versiculo
+					? `<blockquote class="versiculo" data-versiculo>
+				<span data-versiculo-texto>${e(versiculo.texto)}</span>
+				<cite data-versiculo-cita>${e(versiculo.cita)}</cite>
+			</blockquote>`
+					: ''
+			}
 		</div>
 		<div class="valores" data-revela>
 			${sitio.valores
@@ -393,7 +403,9 @@ export function paginaInicio({ sitio, menu }) {
 			<div class="dato">
 				<p class="dato__etiqueta">Horario</p>
 				<p class="dato__valor">${e(horario)}</p>
-				<p class="dato__extra" data-estado-detalle>${e(sitio.entrega)}</p>
+				<!-- Lo rellena app.js con el estado en vivo. Vacío sin JavaScript:
+				     el horario completo ya está en la línea de arriba. -->
+				<p class="dato__extra" data-estado-detalle></p>
 			</div>
 			<div class="dato">
 				<p class="dato__etiqueta">Dónde estamos</p>

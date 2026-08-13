@@ -1,9 +1,8 @@
 /**
  * Servidor local para desarrollo.
  *
- * Compila y sirve dist/, y además atiende /api/order con el mismo manejador
- * que usan Vercel, Cloudflare y Netlify. Así lo que pruebas aquí es lo que
- * corre en producción.
+ * Compila y sirve dist/. El sitio es estático: las órdenes salen por WhatsApp
+ * desde el teléfono del cliente, así que no hay nada de servidor que emular.
  *
  *   node src/dev.js          -> http://localhost:4321
  *   node src/dev.js --port 8080
@@ -14,8 +13,6 @@ import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize, extname } from 'node:path';
 import { spawnSync } from 'node:child_process';
-
-import { manejarOrden } from './order-handler.js';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, '..');
@@ -43,26 +40,6 @@ if (compilacion.status !== 0) process.exit(compilacion.status ?? 1);
 const servidor = createServer(async (req, res) => {
 	const url = new URL(req.url, `http://localhost:${PUERTO}`);
 
-	if (url.pathname === '/api/order') {
-		const trozos = [];
-		for await (const t of req) trozos.push(t);
-
-		const peticion = new Request(url, {
-			method: req.method,
-			headers: req.headers,
-			body: ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(trozos)
-		});
-
-		const respuesta = await manejarOrden(peticion, process.env);
-		const cuerpo = await respuesta.text();
-
-		res.writeHead(respuesta.status, Object.fromEntries(respuesta.headers));
-		res.end(cuerpo);
-
-		console.log(`  ${req.method} /api/order -> ${respuesta.status}`);
-		return;
-	}
-
 	// Evita que ../../ se escape de dist/.
 	const pedido = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '');
 	let ruta = join(salida, pedido);
@@ -86,7 +63,5 @@ const servidor = createServer(async (req, res) => {
 });
 
 servidor.listen(PUERTO, () => {
-	const avisa = process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID;
-	console.log(`  Sirviendo en  http://localhost:${PUERTO}`);
-	console.log(`  Telegram      ${avisa ? 'configurado' : 'sin configurar (las órdenes solo van por WhatsApp)'}\n`);
+	console.log(`  Sirviendo en  http://localhost:${PUERTO}\n`);
 });

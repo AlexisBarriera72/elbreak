@@ -5,7 +5,7 @@ Carta y órdenes de [El Break Food Truck](https://instagram.com/el_break_food_tr
 Sitio estático. Sin framework, sin dependencias, sin `node_modules`. El HTML se
 genera a partir de dos archivos de datos y se sube tal cual.
 
-**Peso total: ~658 KB**, fotos y tipografías incluidas.
+**Peso total: ~678 KB**, fotos y tipografías incluidas.
 
 ---
 
@@ -16,7 +16,7 @@ Hace falta **Node 18 o superior**. Nada más — no hay `npm install`.
 ```bash
 npm run dev      # compila y sirve en http://localhost:4321
 npm run build    # genera dist/
-npm test         # 29 pruebas, sin dependencias
+npm test         # 31 pruebas, sin dependencias
 ```
 
 ---
@@ -29,6 +29,7 @@ Todo el contenido vive en dos archivos. **No hay que tocar el HTML.**
 | --- | --- |
 | Platos, precios, descripciones, fotos | `src/data/menu.json` |
 | Teléfono, horario, dirección, Instagram | `src/data/site.json` |
+| Versículos de la tarjeta | `src/data/versiculos.json` |
 
 Un precio se escribe **una sola vez**. De ahí sale la carta, el creador de
 bowls, el carrito y el mensaje de WhatsApp, así que no pueden contradecirse.
@@ -88,44 +89,70 @@ los datos que lee Google. Si abres un sábado, añade `"6": { ... }` y ya.
 
 ## Cómo llegan las órdenes
 
-Hay dos caminos, y el segundo es opcional.
+**Por WhatsApp, y solo por WhatsApp.** El cliente arma su orden y le da a
+«Enviar por WhatsApp». Se le abre WhatsApp con la orden ya escrita y solo tiene
+que darle a enviar. Te llega como un mensaje normal, desde su número.
 
-**1. WhatsApp (siempre activo, sin configurar nada).**
-El cliente arma su orden y le da a «Enviar por WhatsApp». Se le abre WhatsApp
-con la orden ya escrita y solo tiene que darle a enviar. Te llega como un
-mensaje normal. No hay servidor de por medio.
+No hay servidor de por medio, no hay base de datos y no hay nada que
+configurar: funciona desde el primer despliegue. El número al que llegan las
+órdenes es el campo `whatsapp` de `site.json`.
 
-**2. Telegram (opcional, para que quede constancia).**
-Además, el sitio avisa a un bot de Telegram. Sirve por si el cliente arma la
-orden y no llega a darle a enviar en WhatsApp. **Si no lo configuras, no pasa
-nada**: el sitio funciona igual desde el primer despliegue.
+---
 
-### Configurar el aviso de Telegram
+## El día que no sales
 
-1. En Telegram, escribe a **@BotFather** y manda `/newbot`. Te da un token:
-   `8123456789:AAH0k2Lp-Qxxxxxxxxxxxxxxxxxxxxx`
-2. Abre un chat con tu bot nuevo y mándale cualquier cosa («hola»).
-3. Entra en `https://api.telegram.org/bot<TU_TOKEN>/getUpdates` y busca
-   `"chat":{"id":123456789` — ese número es tu chat.
-4. Mete los dos valores en el panel del host:
+Entra en **`/panel`**, escribe la clave y dale a **«Hoy no salimos»**. La
+píldora del sitio pasa a decir *Cerrado hoy* y debajo *Hoy no salimos. Mañana
+abrimos a las 11:00 am*.
 
-   | Variable | Valor |
-   | --- | --- |
-   | `TELEGRAM_BOT_TOKEN` | el token de BotFather |
-   | `TELEGRAM_CHAT_ID` | el número del paso 3 |
+**No hay que acordarse de volver a abrir.** Lo que se guarda es la fecha, no un
+sí/no: en cuanto deja de ser hoy, el truck vuelve solo a su horario. Si se te
+olvida, no pasa nada. El botón de «Volver al horario normal» solo hace falta si
+te arrepientes el mismo día.
 
-Instala Telegram en el teléfono, activa las notificaciones de ese chat y ya
-suena cada vez que alguien manda una orden.
+La página no está enlazada desde ningún sitio y lleva `noindex`, pero lo que la
+protege de verdad es la clave. **Que sea larga.**
 
-> El token va **solo** en el panel del host, nunca en el repositorio.
-> `.env` está en `.gitignore` para que no se suba por accidente.
+### Qué hay que configurar una vez
+
+En Vercel, `Settings → Environment Variables`. Los cuatro valores están
+explicados en `.env.example`:
+
+| Variable | De dónde sale |
+| --- | --- |
+| `PANEL_CLAVE` | te la inventas tú |
+| `GLOBAL_CONFIG_ID` | Storage → Global Config → Create |
+| `GLOBAL_CONFIG_READ_TOKEN` | Global Config → Tokens |
+| `VERCEL_API_TOKEN` | Account Settings → Tokens |
+
+> `VERCEL_API_TOKEN` vale para toda tu cuenta de Vercel: trátalo como una
+> contraseña. Solo lo usa la función en el servidor, nunca llega al navegador.
+
+**Si no configuras nada, no se rompe nada**: el sitio funciona con su horario
+de siempre y `/panel` simplemente dice que no está configurado.
+
+---
+
+## Los versículos
+
+Gira uno por día, a medianoche en Yauco. Con los 123 que hay, un cliente que
+venga cada semana tarda unos cuatro meses en ver uno repetido.
+
+Para añadir más, pega otra línea al final de la lista en
+`src/data/versiculos.json`:
+
+```json
+{ "texto": "Lo que quieras poner.", "cita": "Libro 1:1" }
+```
+
+No hay que tocar nada más: el ciclo se alarga solo. Todo el que abra la página
+el mismo día ve el mismo versículo, y no cambia al recargar.
 
 ---
 
 ## Publicar
 
-El sitio corre igual en los tres. La función de `/api/order` está escrita con
-`Request`/`Response` estándar y cada host tiene su adaptador de tres líneas.
+El sitio es estático y corre igual en los tres.
 
 ### Cloudflare Pages — recomendado
 
@@ -136,9 +163,6 @@ Su plan gratuito **permite uso comercial**, que es lo que es un food truck.
 3. Configuración:
    - Build command: `npm run build`
    - Build output directory: `dist`
-4. Settings → Environment variables → añade las dos de Telegram (si las usas).
-
-Las funciones de `functions/api/` se publican solas.
 
 ### Netlify
 
@@ -162,25 +186,26 @@ deja configurado: conecta el repositorio y listo.
 src/
   data/menu.json          ← platos y precios (fuente única)
   data/site.json          ← teléfono, horario, dirección
+  data/versiculos.json    ← los 123 versículos
   build.js                ← genera dist/. Sin dependencias.
-  dev.js                  ← servidor local con /api/order
+  dev.js                  ← servidor local
   templates/pagina.js     ← el HTML
-  order-handler.js        ← aviso de Telegram (Request → Response)
+  templates/panel.js      ← la página de /panel
 
 public/                   ← se copia tal cual a dist/
   assets/css/app.css
-  assets/js/horario.js    ← horario. Lo usan el navegador y el build.
+  assets/js/horario.js    ← horario y fechas. Lo usan navegador, build y función.
+  assets/js/versiculo.js  ← qué versículo toca hoy
   assets/js/carrito.js    ← carrito y mensaje de WhatsApp
   assets/js/formato.js    ← formato de precios
   assets/js/app.js        ← conecta todo con la página
+  assets/js/panel.js      ← los dos botones de /panel
   assets/img/  fonts/
   _headers                ← caché y seguridad (Cloudflare y Netlify)
 
-api/order.js              ← adaptador Vercel
-functions/api/order.js    ← adaptador Cloudflare Pages
-netlify/functions/order.mjs ← adaptador Netlify
+api/estado.js             ← lee y escribe el cierre del día
 
-test/                     ← 29 pruebas con el runner de Node
+test/                     ← 31 pruebas con el runner de Node
 ```
 
 Tres decisiones que conviene no deshacer:
@@ -194,6 +219,9 @@ Tres decisiones que conviene no deshacer:
 - **La carta va escrita en el HTML**, no la pinta JavaScript. Por eso Google la
   lee y por eso el sitio sirve aunque el JavaScript falle. El JavaScript solo
   añade el estado en vivo y el carrito.
+- **El cierre se guarda como fecha, no como sí/no.** Es lo que hace que el
+  truck vuelva solo a su horario al día siguiente. Si algún día se cambia por
+  un booleano, un despiste deja el sitio cerrado para siempre.
 
 ---
 
