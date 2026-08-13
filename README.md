@@ -16,7 +16,7 @@ Hace falta **Node 18 o superior**. Nada más — no hay `npm install`.
 ```bash
 npm run dev      # compila y sirve en http://localhost:4321
 npm run build    # genera dist/
-npm test         # 39 pruebas, sin dependencias
+npm test         # 45 pruebas, sin dependencias
 ```
 
 ---
@@ -123,15 +123,19 @@ protege de verdad es la clave. **Que sea larga.**
 
 ### Qué hay que configurar una vez
 
-En Vercel, `Settings → Environment Variables`. Los cuatro valores están
-explicados en `.env.example`:
+En Vercel, `Settings → Environment Variables`. Está todo explicado en
+`.env.example`:
 
 | Variable | De dónde sale |
 | --- | --- |
+| `GLOBAL_CONFIG` | **la crea Vercel sola** al conectar el store al proyecto |
 | `PANEL_CLAVE` | te la inventas tú |
-| `GLOBAL_CONFIG_ID` | Storage → Global Config → Create |
-| `GLOBAL_CONFIG_READ_TOKEN` | Global Config → Tokens |
 | `VERCEL_API_TOKEN` | Account Settings → Tokens |
+| `VERCEL_TEAM_ID` | solo si el proyecto está en un equipo |
+
+`GLOBAL_CONFIG` trae dentro el id y el token de lectura, así que no hay que
+copiarlos por separado. Solo hay que escribir a mano la clave y el token de
+escritura.
 
 > `VERCEL_API_TOKEN` vale para toda tu cuenta de Vercel: trátalo como una
 > contraseña. Solo lo usa la función en el servidor, nunca llega al navegador.
@@ -213,7 +217,7 @@ public/                   ← se copia tal cual a dist/
 
 api/estado.js             ← lee y escribe la excepción del día
 
-test/                     ← 39 pruebas con el runner de Node
+test/                     ← 45 pruebas con el runner de Node
 ```
 
 Cuatro decisiones que conviene no deshacer:

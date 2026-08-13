@@ -16,13 +16,12 @@
  *   GET  /api/estado   ->  { "excepcion": {...} | null }
  *   POST /api/estado   ->  { clave, modo: "cerrado"|"abierto"|"normal", abre?, cierra? }
  *
- * Variables de entorno (todas en el panel de Vercel, nunca en el repositorio):
+ * Variables de entorno (en el panel de Vercel, nunca en el repositorio):
  *
- *   PANEL_CLAVE                la clave que escribe el dueño
- *   GLOBAL_CONFIG_ID           id del Global Config
- *   GLOBAL_CONFIG_READ_TOKEN   token de solo lectura
- *   VERCEL_API_TOKEN           token de la cuenta, solo para escribir
- *   VERCEL_TEAM_ID             opcional, si el proyecto está en un equipo
+ *   GLOBAL_CONFIG      la crea Vercel sola al conectar el store al proyecto
+ *   PANEL_CLAVE        la clave que escribe el dueño
+ *   VERCEL_API_TOKEN   token de la cuenta, solo para escribir
+ *   VERCEL_TEAM_ID     solo si el proyecto está dentro de un equipo
  */
 
 import { fechaEnZona, aMinutos } from '../public/assets/js/horario.js';
@@ -86,12 +85,45 @@ function excepcionValida(v) {
 	return null;
 }
 
-async function leerExcepcion(env) {
-	const { GLOBAL_CONFIG_ID: id, GLOBAL_CONFIG_READ_TOKEN: token } = env;
-	if (!id || !token) return null;
+/**
+ * De dónde salen el id y el token de lectura.
+ *
+ * Al conectar el Global Config al proyecto, Vercel crea sola la variable
+ * GLOBAL_CONFIG con la cadena de conexión entera:
+ *
+ *   https://global-config.vercel.com/ecfg_xxx?token=yyy
+ *
+ * Se lee de ahí en vez de pedir que se copien los dos trozos a mano: son dos
+ * cosas menos que pegar mal, y si algún día se rota el token, Vercel actualiza
+ * la variable y esto sigue funcionando.
+ */
+export function conexion(env) {
+	if (env.GLOBAL_CONFIG) {
+		try {
+			const url = new URL(env.GLOBAL_CONFIG);
+			const id = url.pathname.replace(/^\/+/, '');
+			const token = url.searchParams.get('token');
 
-	const respuesta = await fetch(`${LECTURA}/${id}/item/${LLAVE}`, {
-		headers: { Authorization: `Bearer ${token}` }
+			if (id && token) return { id, token };
+		} catch (e) {
+			// Cadena mal formada: se prueba con las variables sueltas.
+		}
+	}
+
+	// Salida de emergencia por si se prefiere ponerlas por separado.
+	if (env.GLOBAL_CONFIG_ID && env.GLOBAL_CONFIG_READ_TOKEN) {
+		return { id: env.GLOBAL_CONFIG_ID, token: env.GLOBAL_CONFIG_READ_TOKEN };
+	}
+
+	return null;
+}
+
+async function leerExcepcion(env) {
+	const conf = conexion(env);
+	if (!conf) return null;
+
+	const respuesta = await fetch(`${LECTURA}/${conf.id}/item/${LLAVE}`, {
+		headers: { Authorization: `Bearer ${conf.token}` }
 	});
 
 	// 404 significa que nunca se ha escrito: día normal.
@@ -100,12 +132,23 @@ async function leerExcepcion(env) {
 	return excepcionValida(await respuesta.json());
 }
 
-/** Escribe la excepción, o null para volver al horario normal. */
+/**
+ * Escribe la excepción, o null para volver al horario normal.
+ *
+ * Devuelve el error de Vercel tal cual cuando falla. Casi siempre es una de
+ * dos cosas: el token no alcanza al Global Config, o el proyecto está en un
+ * equipo y falta VERCEL_TEAM_ID. Sin el mensaje de arriba no hay forma de
+ * distinguirlas desde el teléfono.
+ */
 async function escribirExcepcion(env, valor) {
-	const { GLOBAL_CONFIG_ID: id, VERCEL_API_TOKEN: token, VERCEL_TEAM_ID: equipo } = env;
-	if (!id || !token) return false;
+	const conf = conexion(env);
+	const token = env.VERCEL_API_TOKEN;
+	const equipo = env.VERCEL_TEAM_ID;
 
-	const url = `${ESCRITURA}/${id}/items${equipo ? `?teamId=${encodeURIComponent(equipo)}` : ''}`;
+	if (!conf) return { ok: false, detalle: 'Falta GLOBAL_CONFIG.' };
+	if (!token) return { ok: false, detalle: 'Falta VERCEL_API_TOKEN.' };
+
+	const url = `${ESCRITURA}/${conf.id}/items${equipo ? `?teamId=${encodeURIComponent(equipo)}` : ''}`;
 
 	const respuesta = await fetch(url, {
 		method: 'PATCH',
@@ -116,7 +159,12 @@ async function escribirExcepcion(env, valor) {
 		body: JSON.stringify({ items: [{ operation: 'upsert', key: LLAVE, value: valor }] })
 	});
 
-	return respuesta.ok;
+	if (respuesta.ok) return { ok: true };
+
+	const cuerpo = await respuesta.json().catch(() => ({}));
+	const mensaje = (cuerpo.error && cuerpo.error.message) || `HTTP ${respuesta.status}`;
+
+	return { ok: false, detalle: mensaje };
 }
 
 export default async function handler(peticion) {
@@ -171,8 +219,10 @@ export default async function handler(peticion) {
 		return json({ error: 'No sé qué hacer con ese modo.' }, 400);
 	}
 
-	if (!(await escribirExcepcion(env, valor))) {
-		return json({ error: 'No se pudo guardar. Inténtalo otra vez.' }, 502);
+	const guardado = await escribirExcepcion(env, valor);
+
+	if (!guardado.ok) {
+		return json({ error: `No se pudo guardar: ${guardado.detalle}` }, 502);
 	}
 
 	return json({ excepcion: valor }, 200, { 'cache-control': 'no-store' });
