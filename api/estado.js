@@ -1,14 +1,20 @@
 /**
- * Interruptor de «hoy no salimos».
+ * La excepción de hoy: «hoy no salimos» o «hoy abrimos aunque no toque».
  *
- * Guarda una sola cosa en el Global Config de Vercel: la fecha del día que el
- * dueño marcó como cerrado. No un `true`, una fecha. De ahí sale la propiedad
- * que pidió el dueño: si se le olvida volver a abrir, a medianoche el valor
- * deja de coincidir con hoy y el truck vuelve solo a su horario normal. No hay
- * nada que limpiar ni ninguna tarea programada.
+ * Se guarda una sola cosa en el Global Config de Vercel, y siempre lleva la
+ * fecha dentro:
  *
- *   GET  /api/estado   ->  { "cerrado": "2026-08-13" }  o  { "cerrado": null }
- *   POST /api/estado   ->  { clave, cerrado: true|false }
+ *   { "fecha": "2026-08-13", "modo": "cerrado" }
+ *   { "fecha": "2026-08-15", "modo": "abierto", "abre": "17:00", "cierra": "22:00" }
+ *   null
+ *
+ * Que se guarde la fecha y no un sí/no es lo que hace que el truck vuelva solo
+ * a su horario: en cuanto deja de ser hoy, la excepción deja de valer. Si al
+ * dueño se le olvida deshacerla, no pasa nada. No hay nada que limpiar ni
+ * ninguna tarea programada.
+ *
+ *   GET  /api/estado   ->  { "excepcion": {...} | null }
+ *   POST /api/estado   ->  { clave, modo: "cerrado"|"abierto"|"normal", abre?, cierra? }
  *
  * Variables de entorno (todas en el panel de Vercel, nunca en el repositorio):
  *
@@ -19,14 +25,17 @@
  *   VERCEL_TEAM_ID             opcional, si el proyecto está en un equipo
  */
 
-import { fechaEnZona } from '../public/assets/js/horario.js';
+import { fechaEnZona, aMinutos } from '../public/assets/js/horario.js';
 
 export const config = { runtime: 'edge' };
 
-const LLAVE = 'cierre';
+const LLAVE = 'excepcion';
 const ZONA = 'America/Puerto_Rico';
 const LECTURA = 'https://global-config.vercel.com';
 const ESCRITURA = 'https://api.vercel.com/v1/global-config';
+
+const ES_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+const ES_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const json = (cuerpo, estado = 200, cabeceras = {}) =>
 	new Response(JSON.stringify(cuerpo), {
@@ -58,8 +67,26 @@ async function mismaClave(dada, buena) {
 	return diferencia === 0;
 }
 
-/** La fecha guardada, o null si no hay ninguna o el valor no tiene sentido. */
-async function leerCierre(env) {
+/**
+ * Deja pasar solo lo que la página sabe interpretar. Lo que venga raro se trata
+ * como si no hubiera excepción, que es el estado seguro: el horario normal.
+ */
+function excepcionValida(v) {
+	if (!v || typeof v !== 'object') return null;
+	if (!ES_FECHA.test(v.fecha || '')) return null;
+
+	if (v.modo === 'cerrado') return { fecha: v.fecha, modo: 'cerrado' };
+
+	if (v.modo === 'abierto') {
+		if (!ES_HORA.test(v.abre || '') || !ES_HORA.test(v.cierra || '')) return null;
+		if (aMinutos(v.abre) >= aMinutos(v.cierra)) return null;
+		return { fecha: v.fecha, modo: 'abierto', abre: v.abre, cierra: v.cierra };
+	}
+
+	return null;
+}
+
+async function leerExcepcion(env) {
 	const { GLOBAL_CONFIG_ID: id, GLOBAL_CONFIG_READ_TOKEN: token } = env;
 	if (!id || !token) return null;
 
@@ -70,12 +97,11 @@ async function leerCierre(env) {
 	// 404 significa que nunca se ha escrito: día normal.
 	if (!respuesta.ok) return null;
 
-	const valor = await respuesta.json();
-	return typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : null;
+	return excepcionValida(await respuesta.json());
 }
 
-/** Escribe la fecha, o null para volver al horario normal. */
-async function escribirCierre(env, valor) {
+/** Escribe la excepción, o null para volver al horario normal. */
+async function escribirExcepcion(env, valor) {
 	const { GLOBAL_CONFIG_ID: id, VERCEL_API_TOKEN: token, VERCEL_TEAM_ID: equipo } = env;
 	if (!id || !token) return false;
 
@@ -97,9 +123,9 @@ export default async function handler(peticion) {
 	const env = process.env;
 
 	if (peticion.method === 'GET') {
-		return json({ cerrado: await leerCierre(env) }, 200, {
-			// Medio minuto de retraso como mucho al pulsar el interruptor, a
-			// cambio de que mil visitas no sean mil invocaciones de la función.
+		return json({ excepcion: await leerExcepcion(env) }, 200, {
+			// Medio minuto de retraso como mucho al pulsar un botón, a cambio de
+			// que mil visitas no sean mil invocaciones de la función.
 			'cache-control': 'public, s-maxage=30'
 		});
 	}
@@ -125,11 +151,29 @@ export default async function handler(peticion) {
 		return json({ error: 'Clave incorrecta.' }, 401);
 	}
 
-	const valor = cuerpo.cerrado ? fechaEnZona(ZONA) : null;
+	const hoy = fechaEnZona(ZONA);
+	let valor = null;
 
-	if (!(await escribirCierre(env, valor))) {
+	if (cuerpo.modo === 'cerrado') {
+		valor = { fecha: hoy, modo: 'cerrado' };
+	} else if (cuerpo.modo === 'abierto') {
+		valor = excepcionValida({
+			fecha: hoy,
+			modo: 'abierto',
+			abre: cuerpo.abre,
+			cierra: cuerpo.cierra
+		});
+
+		if (!valor) {
+			return json({ error: 'Revisa las horas: la de abrir tiene que ir antes.' }, 400);
+		}
+	} else if (cuerpo.modo !== 'normal') {
+		return json({ error: 'No sé qué hacer con ese modo.' }, 400);
+	}
+
+	if (!(await escribirExcepcion(env, valor))) {
 		return json({ error: 'No se pudo guardar. Inténtalo otra vez.' }, 502);
 	}
 
-	return json({ cerrado: valor }, 200, { 'cache-control': 'no-store' });
+	return json({ excepcion: valor }, 200, { 'cache-control': 'no-store' });
 }

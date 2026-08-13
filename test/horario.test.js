@@ -10,7 +10,8 @@ import {
 	estadoServicio,
 	resumenHorario,
 	horarioSchema,
-	horaLegible
+	horaLegible,
+	ventanaHabitual
 } from '../public/assets/js/horario.js';
 
 const sitio = JSON.parse(await readFile(new URL('../src/data/site.json', import.meta.url), 'utf8'));
@@ -126,4 +127,65 @@ test('el cierre no se contagia al día siguiente', () => {
 	const jueves = new Date(Date.UTC(2026, 7, 13, 16, 0));
 
 	assert.equal(estadoServicio(horario, zonaHoraria, jueves).etiqueta, 'Abierto ahora');
+});
+
+/* --- Abrir un día que no toca ------------------------------------------- */
+
+const FIESTA = { abre: '17:00', cierra: '22:00' };
+
+test('un domingo cualquiera está cerrado', () => {
+	assert.equal(estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '19:00')).estado, 'cerrado');
+});
+
+test('ese mismo domingo, forzado a abrir, está abierto', () => {
+	const estado = estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '19:00'), {
+		abiertoHoy: FIESTA
+	});
+
+	assert.equal(estado.estado, 'abierto');
+	assert.equal(estado.detalle, 'Estamos sirviendo hasta las 10:00 pm.');
+});
+
+test('antes de la hora forzada avisa a qué hora se abre', () => {
+	const estado = estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '15:00'), {
+		abiertoHoy: FIESTA
+	});
+
+	assert.equal(estado.estado, 'cerrado');
+	assert.equal(estado.detalle, 'Hoy abrimos a las 5:00 pm.');
+});
+
+test('pasada la hora forzada vuelve a apuntar al horario normal', () => {
+	const estado = estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '23:00'), {
+		abiertoHoy: FIESTA
+	});
+
+	assert.equal(estado.detalle, 'Miércoles abrimos a las 11:00 am.');
+});
+
+test('el aviso de cierra-pronto también vale en un día forzado', () => {
+	const estado = estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '21:45'), {
+		abiertoHoy: FIESTA
+	});
+
+	assert.equal(estado.estado, 'cierra-pronto');
+});
+
+test('si se marcan las dos cosas, cerrar gana', () => {
+	const estado = estadoServicio(horario, zonaHoraria, enPR('2026-08-16', '19:00'), {
+		abiertoHoy: FIESTA,
+		cerradoHoy: true
+	});
+
+	assert.equal(estado.estado, 'cerrado');
+	assert.equal(estado.etiqueta, 'Cerrado hoy');
+});
+
+test('la ventana habitual sale del propio horario', () => {
+	assert.deepEqual(ventanaHabitual(horario), { abre: '11:00', cierra: '14:00' });
+});
+
+test('sin horario, la ventana habitual no revienta', () => {
+	assert.deepEqual(ventanaHabitual({}), { abre: '11:00', cierra: '14:00' });
+	assert.deepEqual(ventanaHabitual(undefined), { abre: '11:00', cierra: '14:00' });
 });

@@ -99,19 +99,53 @@ export function diaOrdinal(zona, ahora = new Date()) {
 }
 
 /**
+ * La ventana que más se repite en el horario. Es la que se propone cuando el
+ * dueño abre un día suelto, para no tener que escribirla cada vez.
+ */
+export function ventanaHabitual(horario) {
+	const cuenta = new Map();
+
+	for (const dia of Object.values(horario || {})) {
+		if (!dia || !dia.abre || !dia.cierra) continue;
+		const clave = `${dia.abre}|${dia.cierra}`;
+		cuenta.set(clave, (cuenta.get(clave) || 0) + 1);
+	}
+
+	let masVista = null;
+	let veces = 0;
+	for (const [clave, n] of cuenta) {
+		if (n > veces) {
+			veces = n;
+			masVista = clave;
+		}
+	}
+
+	if (!masVista) return { abre: '11:00', cierra: '14:00' };
+
+	const [abre, cierra] = masVista.split('|');
+	return { abre, cierra };
+}
+
+/**
  * Estado del servicio.
  *
- * `opciones.cerradoHoy` es el interruptor del panel: cuando el dueño marca que
- * hoy no sale, se ignora la ventana de hoy y se busca directamente el próximo
- * día de servicio. Toda la cuenta de «cuándo volvemos» es la misma de siempre,
- * así no hay dos versiones que puedan contradecirse.
+ * Dos interruptores del panel, y los dos valen solo para hoy:
+ *
+ *   opciones.cerradoHoy   hoy no salimos, aunque toque
+ *   opciones.abiertoHoy   {abre, cierra} para abrir un día que no toca
+ *
+ * Ninguno de los dos añade una segunda forma de contar la vuelta: si hoy no
+ * hay servicio, se cae al mismo bucle de «próximo día» de siempre.
  *
  * @returns {{estado: 'abierto'|'cierra-pronto'|'cerrado', etiqueta: string, detalle: string}}
  */
 export function estadoServicio(horario, zona, ahora = new Date(), opciones = {}) {
 	const { dia, minutos } = momentoEnZona(zona, ahora);
 	const cerradoHoy = Boolean(opciones.cerradoHoy);
-	const hoy = cerradoHoy ? null : horario[dia] || horario[String(dia)];
+	const forzado = opciones.abiertoHoy || null;
+
+	// Cerrar gana sobre abrir: si el dueño marca las dos cosas, no sale.
+	const hoy = cerradoHoy ? null : forzado || horario[dia] || horario[String(dia)];
 
 	if (hoy) {
 		const abre = aMinutos(hoy.abre);

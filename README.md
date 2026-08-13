@@ -16,7 +16,7 @@ Hace falta **Node 18 o superior**. Nada más — no hay `npm install`.
 ```bash
 npm run dev      # compila y sirve en http://localhost:4321
 npm run build    # genera dist/
-npm test         # 31 pruebas, sin dependencias
+npm test         # 39 pruebas, sin dependencias
 ```
 
 ---
@@ -99,16 +99,24 @@ configurar: funciona desde el primer despliegue. El número al que llegan las
 
 ---
 
-## El día que no sales
+## Cambiar el horario de un día suelto
 
-Entra en **`/panel`**, escribe la clave y dale a **«Hoy no salimos»**. La
-píldora del sitio pasa a decir *Cerrado hoy* y debajo *Hoy no salimos. Mañana
-abrimos a las 11:00 am*.
+Entra en **`/panel`** y escribe la clave. Hay tres botones:
 
-**No hay que acordarse de volver a abrir.** Lo que se guarda es la fecha, no un
-sí/no: en cuanto deja de ser hoy, el truck vuelve solo a su horario. Si se te
-olvida, no pasa nada. El botón de «Volver al horario normal» solo hace falta si
-te arrepientes el mismo día.
+| Botón | Para qué |
+| --- | --- |
+| **Marcar cerrado** | tocaba trabajar y al final no sales |
+| **Abrir hoy** | una fiesta, un evento, un domingo suelto |
+| **Volver al horario normal** | deshacer lo anterior |
+
+Al abrir un día que no toca se proponen las horas de siempre (11:00 am – 2:00
+pm), pero puedes cambiarlas: si el evento es de noche, pones 5:00 pm – 10:00 pm
+y el sitio lo dice tal cual, con su aviso de «cierra pronto» y todo.
+
+**No hay que acordarse de deshacerlo.** Lo guardado lleva la fecha dentro, así
+que en cuanto deja de ser hoy el truck vuelve solo a su horario. Si se te
+olvida, no pasa nada. «Volver al horario normal» solo hace falta si te
+arrepientes el mismo día.
 
 La página no está enlazada desde ningún sitio y lleva `noindex`, pero lo que la
 protege de verdad es la clave. **Que sea larga.**
@@ -199,16 +207,16 @@ public/                   ← se copia tal cual a dist/
   assets/js/carrito.js    ← carrito y mensaje de WhatsApp
   assets/js/formato.js    ← formato de precios
   assets/js/app.js        ← conecta todo con la página
-  assets/js/panel.js      ← los dos botones de /panel
+  assets/js/panel.js      ← los tres botones de /panel
   assets/img/  fonts/
   _headers                ← caché y seguridad (Cloudflare y Netlify)
 
-api/estado.js             ← lee y escribe el cierre del día
+api/estado.js             ← lee y escribe la excepción del día
 
-test/                     ← 31 pruebas con el runner de Node
+test/                     ← 39 pruebas con el runner de Node
 ```
 
-Tres decisiones que conviene no deshacer:
+Cuatro decisiones que conviene no deshacer:
 
 - **El horario se calcula una sola vez.** `horario.js` lo importan el navegador
   y el script de build. Si se duplica la lógica, tarde o temprano el pie de
@@ -219,9 +227,9 @@ Tres decisiones que conviene no deshacer:
 - **La carta va escrita en el HTML**, no la pinta JavaScript. Por eso Google la
   lee y por eso el sitio sirve aunque el JavaScript falle. El JavaScript solo
   añade el estado en vivo y el carrito.
-- **El cierre se guarda como fecha, no como sí/no.** Es lo que hace que el
-  truck vuelva solo a su horario al día siguiente. Si algún día se cambia por
-  un booleano, un despiste deja el sitio cerrado para siempre.
+- **La excepción del panel lleva la fecha dentro, no es un sí/no.** Es lo que
+  hace que el truck vuelva solo a su horario al día siguiente. Si algún día se
+  cambia por un booleano, un despiste deja el sitio mintiendo para siempre.
 
 ---
 

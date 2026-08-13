@@ -56,14 +56,17 @@ if (porRevelar.length) {
 
 const COLOR_PUNTO = { abierto: '#1f7a34', 'cierra-pronto': '#c98200', cerrado: '#8a9aa0' };
 
-// Lo enciende el dueño desde /panel. Empieza en false: si la consulta falla,
-// manda el horario de siempre y la página nunca se queda muda.
-let cerradoHoy = false;
+// La pone el dueño desde /panel. Empieza en null: si la consulta falla, manda
+// el horario de siempre y la página nunca se queda muda.
+let excepcionHoy = null;
 
 function pintarEstado() {
 	if (!datos.horario || !datos.zonaHoraria) return;
 
-	const estado = estadoServicio(datos.horario, datos.zonaHoraria, new Date(), { cerradoHoy });
+	const estado = estadoServicio(datos.horario, datos.zonaHoraria, new Date(), {
+		cerradoHoy: Boolean(excepcionHoy) && excepcionHoy.modo === 'cerrado',
+		abiertoHoy: excepcionHoy && excepcionHoy.modo === 'abierto' ? excepcionHoy : null
+	});
 
 	$$('[data-estado-vivo]').forEach((pildora) => {
 		pildora.dataset.estado = estado.estado;
@@ -105,26 +108,29 @@ function refrescar() {
 	pintarVersiculo();
 }
 
-/* --- Cierre puntual ------------------------------------------------------
-   El dueño puede marcar desde /panel que hoy no sale. Se guarda la fecha, no
-   un sí/no, así que en cuanto deja de ser hoy el truck vuelve solo a su
-   horario: olvidarse de reabrir no deja el sitio cerrado para siempre.
+/* --- La excepción de hoy -------------------------------------------------
+   Desde /panel el dueño puede marcar que hoy no sale, o que hoy abre aunque
+   no toque. Lo guardado lleva la fecha dentro, así que en cuanto deja de ser
+   hoy el truck vuelve solo a su horario: olvidarse de deshacerlo no deja el
+   sitio mintiendo para siempre.
 
    Va después de pintar, no antes: si la red falla o la función no responde,
    la página ya está enseñando el horario normal.                            */
 
-async function consultarCierre() {
+async function consultarExcepcion() {
 	if (!datos.zonaHoraria) return;
 
 	try {
 		const respuesta = await fetch('/api/estado', { headers: { accept: 'application/json' } });
 		if (!respuesta.ok) return;
 
-		const { cerrado } = await respuesta.json();
-		const hoy = typeof cerrado === 'string' && cerrado === fechaEnZona(datos.zonaHoraria);
+		const { excepcion } = await respuesta.json();
+		const vale = excepcion && excepcion.fecha === fechaEnZona(datos.zonaHoraria);
+		const nueva = vale ? excepcion : null;
 
-		if (hoy !== cerradoHoy) {
-			cerradoHoy = hoy;
+		// Solo se repinta si de verdad cambió algo.
+		if (JSON.stringify(nueva) !== JSON.stringify(excepcionHoy)) {
+			excepcionHoy = nueva;
 			refrescar();
 		}
 	} catch (e) {
@@ -135,9 +141,9 @@ async function consultarCierre() {
 refrescar();
 setInterval(refrescar, 60000);
 
-consultarCierre();
+consultarExcepcion();
 // Cada diez minutos, por si el dueño lo marca con la página ya abierta.
-setInterval(consultarCierre, 600000);
+setInterval(consultarExcepcion, 600000);
 
 /* --- Creador de bowls ---------------------------------------------------- */
 
