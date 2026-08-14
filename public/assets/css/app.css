@@ -133,12 +133,22 @@ p {
 
 /* --- Toldo --------------------------------------------------------------
    El festón mide lo mismo que la franja para que cada color cuelgue como una
-   lengüeta redonda; si los periodos no encajan salen muescas.               */
+   lengüeta redonda; si los periodos no encajan salen muescas.
+
+   La máscara son dos capas: la ceja (la banda recta de arriba) y los festones
+   (los medios círculos). Las dos se unen, y ahí está el detalle: si se tocan
+   justo en el mismo píxel, los dos bordes llegan suavizados a medias tintas y
+   al sumarse no dan opaco del todo — sale una raya translúcida a lo ancho.
+
+   Por eso la ceja baja --solape de más y se mete por debajo de los festones.
+   No se nota: las dos capas descubren el mismo degradado, así que solapar no
+   cambia ningún color, solo tapa la costura.                                 */
 
 .toldo {
 	--franja: 32px;
 	--radio-festón: 16px;
 	--ceja: 10px;
+	--solape: 1px;
 
 	/* Encima del fondo del encabezado, que se detiene justo antes de aquí. */
 	position: relative;
@@ -151,11 +161,11 @@ p {
 	-webkit-mask:
 		radial-gradient(circle var(--radio-festón) at 50% 0, #000 99%, #0000 101%)
 			0 var(--ceja) / var(--franja) var(--franja) repeat-x,
-		linear-gradient(#000 0 0) 0 0 / 100% var(--ceja) no-repeat;
+		linear-gradient(#000 0 0) 0 0 / 100% calc(var(--ceja) + var(--solape)) no-repeat;
 	mask:
 		radial-gradient(circle var(--radio-festón) at 50% 0, #000 99%, #0000 101%)
 			0 var(--ceja) / var(--franja) var(--franja) repeat-x,
-		linear-gradient(#000 0 0) 0 0 / 100% var(--ceja) no-repeat;
+		linear-gradient(#000 0 0) 0 0 / 100% calc(var(--ceja) + var(--solape)) no-repeat;
 }
 
 /* --- Encabezado ---------------------------------------------------------- */
