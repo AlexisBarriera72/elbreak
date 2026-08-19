@@ -29,6 +29,7 @@ export function paginaPanel(sitio) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel · ${e(sitio.nombre)}</title>
+<meta name="description" content="Panel privado del dueño.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">

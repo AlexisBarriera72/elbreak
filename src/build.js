@@ -89,6 +89,7 @@ function pagina404(sitio) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Esa página no existe · ${esc(sitio.nombre)}</title>
+<meta name="description" content="La página que buscas no existe. La carta, los bowls y el horario están en la portada.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">

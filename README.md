@@ -5,7 +5,7 @@ Carta y órdenes de [El Break Food Truck](https://instagram.com/el_break_food_tr
 Sitio estático. Sin framework, sin dependencias, sin `node_modules`. El HTML se
 genera a partir de dos archivos de datos y se sube tal cual.
 
-**Peso total: ~678 KB**, fotos y tipografías incluidas.
+**Peso total: ~685 KB**, fotos y tipografías incluidas.
 
 ---
 

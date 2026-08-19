@@ -201,12 +201,9 @@ p {
 	box-shadow: 0 6px 24px -18px rgb(20 38 43 / 60%);
 }
 
-/* Positioned, para quedar por encima del fondo sin recurrir a z-index. */
 .cabecera__fila {
+	/* Positioned, para quedar por encima del fondo del encabezado. */
 	position: relative;
-}
-
-.cabecera__fila {
 	display: flex;
 	align-items: center;
 	gap: clamp(0.75rem, 2.5vw, 2rem);
@@ -1311,8 +1308,8 @@ a.dato__valor:hover {
 .carrito__cerrar {
 	display: grid;
 	place-items: center;
-	width: 38px;
-	height: 38px;
+	width: 44px;
+	height: 44px;
 	border-radius: 50%;
 	border: 1px solid var(--linea);
 	background: transparent;
@@ -1406,14 +1403,14 @@ a.dato__valor:hover {
 }
 
 .cantidad__boton {
-	width: 28px;
-	height: 28px;
+	width: 44px;
+	height: 44px;
 	display: grid;
 	place-items: center;
 	border: 0;
 	background: transparent;
 	color: var(--mar-hondo);
-	font-size: 1rem;
+	font-size: 1.15rem;
 	line-height: 1;
 	cursor: pointer;
 	border-radius: 50%;
@@ -1467,7 +1464,7 @@ a.dato__valor:hover {
 .campo textarea {
 	width: 100%;
 	font: inherit;
-	font-size: 0.92rem;
+	font-size: 1rem;
 	padding: 0.6rem 0.8rem;
 	border: 1.5px solid var(--linea);
 	border-radius: 12px;
