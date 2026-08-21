@@ -101,11 +101,52 @@ function pintarVersiculo() {
 	if (cita) cita.textContent = hoy.cita;
 }
 
+/* --- Aviso del día ------------------------------------------------------- */
+
+function pintarEspecial() {
+	const banda = $('[data-especial]');
+	if (!banda) return;
+
+	const texto = excepcionHoy && excepcionHoy.especial ? excepcionHoy.especial : '';
+
+	banda.textContent = texto;
+	banda.hidden = texto === '';
+}
+
+/* --- Platos agotados -----------------------------------------------------
+   El plato no se quita de la carta: interesa que se vea que existe. Se atenúa
+   y se desactiva el botón, que es lo que impide meterlo en el carrito.      */
+
+function pintarAgotados() {
+	const fuera = new Set(excepcionHoy && excepcionHoy.agotados ? excepcionHoy.agotados : []);
+
+	$$('[data-agregar]').forEach((boton) => {
+		const agotado = fuera.has(boton.dataset.agregar);
+		if (boton.disabled === agotado) return;
+
+		boton.disabled = agotado;
+
+		if (agotado) {
+			// Se guarda la etiqueta con su precio para poder devolverla luego.
+			if (!boton.dataset.etiqueta) boton.dataset.etiqueta = boton.innerHTML;
+			boton.textContent = 'Agotado hoy';
+		} else if (boton.dataset.etiqueta) {
+			boton.innerHTML = boton.dataset.etiqueta;
+			delete boton.dataset.etiqueta;
+		}
+
+		const ficha = boton.closest('.plato, .tablero__item');
+		if (ficha) ficha.dataset.agotado = agotado ? 'si' : 'no';
+	});
+}
+
 /* Un solo latido para todo lo que depende de la hora: así la página que se
    queda abierta cruza la medianoche y el mediodía sin recargar. */
-function refrescar() {
+function latido() {
 	pintarEstado();
 	pintarVersiculo();
+	pintarEspecial();
+	pintarAgotados();
 }
 
 /* --- La excepción de hoy -------------------------------------------------
@@ -131,15 +172,15 @@ async function consultarExcepcion() {
 		// Solo se repinta si de verdad cambió algo.
 		if (JSON.stringify(nueva) !== JSON.stringify(excepcionHoy)) {
 			excepcionHoy = nueva;
-			refrescar();
+			latido();
 		}
 	} catch (e) {
 		// Sin respuesta, manda el horario de siempre.
 	}
 }
 
-refrescar();
-setInterval(refrescar, 60000);
+latido();
+setInterval(latido, 60000);
 
 consultarExcepcion();
 // Cada diez minutos, por si el dueño lo marca con la página ya abierta.

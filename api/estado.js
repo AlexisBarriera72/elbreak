@@ -1,20 +1,27 @@
 /**
- * La excepción de hoy: «hoy no salimos» o «hoy abrimos aunque no toque».
+ * La excepción de hoy.
  *
- * Se guarda una sola cosa en el Global Config de Vercel, y siempre lleva la
- * fecha dentro:
+ * Todo lo que el dueño puede cambiar sobre la marcha vive en un solo valor del
+ * Global Config, y siempre lleva la fecha dentro:
  *
- *   { "fecha": "2026-08-13", "modo": "cerrado" }
- *   { "fecha": "2026-08-15", "modo": "abierto", "abre": "17:00", "cierra": "22:00" }
- *   null
+ *   {
+ *     "fecha":    "2026-08-13",
+ *     "modo":     "cerrado" | "abierto",   // opcional
+ *     "abre":     "17:00", "cierra": "22:00",
+ *     "agotados": ["pulled-pork-bbq"],
+ *     "especial": "Hoy pastelón de amarillos $8"
+ *   }
  *
- * Que se guarde la fecha y no un sí/no es lo que hace que el truck vuelva solo
- * a su horario: en cuanto deja de ser hoy, la excepción deja de valer. Si al
- * dueño se le olvida deshacerla, no pasa nada. No hay nada que limpiar ni
- * ninguna tarea programada.
+ * Una sola fecha para las tres cosas, y por eso las tres caducan juntas: en
+ * cuanto deja de ser hoy, el truck vuelve a su horario, los platos vuelven a
+ * estar disponibles y el aviso desaparece. Si al dueño se le olvida
+ * deshacerlo, no pasa nada. No hay nada que limpiar ni tarea programada.
  *
  *   GET  /api/estado   ->  { "excepcion": {...} | null }
- *   POST /api/estado   ->  { clave, modo: "cerrado"|"abierto"|"normal", abre?, cierra? }
+ *   POST /api/estado   ->  { clave, ...lo que se quiera cambiar }
+ *
+ * El POST es un parche: solo toca lo que le mandas. Marcar un plato agotado no
+ * borra el aviso del día ni el horario.
  *
  * Variables de entorno (en el panel de Vercel, nunca en el repositorio):
  *
@@ -35,6 +42,9 @@ const ESCRITURA = 'https://api.vercel.com/v1/global-config';
 
 const ES_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const ES_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+const ES_ID = /^[a-z0-9-]{1,40}$/;
+const MAX_AGOTADOS = 60;
+const MAX_ESPECIAL = 160;
 
 const json = (cuerpo, estado = 200, cabeceras = {}) =>
 	new Response(JSON.stringify(cuerpo), {
@@ -64,25 +74,6 @@ async function mismaClave(dada, buena) {
 	for (let i = 0; i < va.length; i++) diferencia |= va[i] ^ vb[i];
 
 	return diferencia === 0;
-}
-
-/**
- * Deja pasar solo lo que la página sabe interpretar. Lo que venga raro se trata
- * como si no hubiera excepción, que es el estado seguro: el horario normal.
- */
-function excepcionValida(v) {
-	if (!v || typeof v !== 'object') return null;
-	if (!ES_FECHA.test(v.fecha || '')) return null;
-
-	if (v.modo === 'cerrado') return { fecha: v.fecha, modo: 'cerrado' };
-
-	if (v.modo === 'abierto') {
-		if (!ES_HORA.test(v.abre || '') || !ES_HORA.test(v.cierra || '')) return null;
-		if (aMinutos(v.abre) >= aMinutos(v.cierra)) return null;
-		return { fecha: v.fecha, modo: 'abierto', abre: v.abre, cierra: v.cierra };
-	}
-
-	return null;
 }
 
 /**
@@ -118,6 +109,43 @@ export function conexion(env) {
 	return null;
 }
 
+/**
+ * Deja pasar solo lo que la página sabe interpretar, y devuelve null si al
+ * final no queda ninguna excepción de verdad. Lo que venga raro se descarta en
+ * silencio: el estado seguro es el horario normal con todo disponible.
+ */
+export function excepcionValida(v) {
+	if (!v || typeof v !== 'object') return null;
+	if (!ES_FECHA.test(v.fecha || '')) return null;
+
+	const limpia = { fecha: v.fecha };
+
+	if (v.modo === 'cerrado') {
+		limpia.modo = 'cerrado';
+	} else if (
+		v.modo === 'abierto' &&
+		ES_HORA.test(v.abre || '') &&
+		ES_HORA.test(v.cierra || '') &&
+		aMinutos(v.abre) < aMinutos(v.cierra)
+	) {
+		limpia.modo = 'abierto';
+		limpia.abre = v.abre;
+		limpia.cierra = v.cierra;
+	}
+
+	if (Array.isArray(v.agotados)) {
+		const ids = [...new Set(v.agotados.filter((i) => typeof i === 'string' && ES_ID.test(i)))];
+		if (ids.length) limpia.agotados = ids.slice(0, MAX_AGOTADOS);
+	}
+
+	if (typeof v.especial === 'string' && v.especial.trim()) {
+		limpia.especial = v.especial.trim().slice(0, MAX_ESPECIAL);
+	}
+
+	// Solo la fecha no es una excepción.
+	return Object.keys(limpia).length > 1 ? limpia : null;
+}
+
 async function leerExcepcion(env) {
 	const conf = conexion(env);
 	if (!conf) return null;
@@ -133,7 +161,7 @@ async function leerExcepcion(env) {
 }
 
 /**
- * Escribe la excepción, o null para volver al horario normal.
+ * Escribe la excepción, o null para volver a la normalidad.
  *
  * Devuelve el error de Vercel tal cual cuando falla. Casi siempre es una de
  * dos cosas: el token no alcanza al Global Config, o el proyecto está en un
@@ -165,6 +193,57 @@ async function escribirExcepcion(env, valor) {
 	const mensaje = (cuerpo.error && cuerpo.error.message) || `HTTP ${respuesta.status}`;
 
 	return { ok: false, detalle: mensaje };
+}
+
+/**
+ * Aplica el cambio pedido sobre lo que ya había hoy.
+ *
+ * Es un parche, no un reemplazo: marcar un plato agotado no puede borrar el
+ * aviso del día ni el horario que se puso por la mañana.
+ *
+ * @returns {{base: object} | {error: string}}
+ */
+export function aplicarCambio(anterior, cuerpo, hoy) {
+	// Si lo guardado es de otro día, ya no vale: se empieza de cero.
+	const base = anterior && anterior.fecha === hoy ? { ...anterior } : {};
+	base.fecha = hoy;
+
+	if ('modo' in cuerpo) {
+		if (cuerpo.modo === 'normal') {
+			delete base.modo;
+			delete base.abre;
+			delete base.cierra;
+		} else if (cuerpo.modo === 'cerrado') {
+			base.modo = 'cerrado';
+			delete base.abre;
+			delete base.cierra;
+		} else if (cuerpo.modo === 'abierto') {
+			if (
+				!ES_HORA.test(cuerpo.abre || '') ||
+				!ES_HORA.test(cuerpo.cierra || '') ||
+				aMinutos(cuerpo.abre) >= aMinutos(cuerpo.cierra)
+			) {
+				return { error: 'Revisa las horas: la de abrir tiene que ir antes.' };
+			}
+			base.modo = 'abierto';
+			base.abre = cuerpo.abre;
+			base.cierra = cuerpo.cierra;
+		} else {
+			return { error: 'No sé qué hacer con ese modo.' };
+		}
+	}
+
+	if ('agotados' in cuerpo) {
+		if (!Array.isArray(cuerpo.agotados)) return { error: 'La lista de agotados no es una lista.' };
+		base.agotados = cuerpo.agotados;
+	}
+
+	if ('especial' in cuerpo) {
+		if (typeof cuerpo.especial !== 'string') return { error: 'El aviso tiene que ser texto.' };
+		base.especial = cuerpo.especial;
+	}
+
+	return { base };
 }
 
 export default async function handler(peticion) {
@@ -217,25 +296,11 @@ export default async function handler(peticion) {
 	}
 
 	const hoy = fechaEnZona(ZONA);
-	let valor = null;
+	const cambio = aplicarCambio(await leerExcepcion(env), cuerpo, hoy);
 
-	if (cuerpo.modo === 'cerrado') {
-		valor = { fecha: hoy, modo: 'cerrado' };
-	} else if (cuerpo.modo === 'abierto') {
-		valor = excepcionValida({
-			fecha: hoy,
-			modo: 'abierto',
-			abre: cuerpo.abre,
-			cierra: cuerpo.cierra
-		});
+	if (cambio.error) return json({ error: cambio.error }, 400);
 
-		if (!valor) {
-			return json({ error: 'Revisa las horas: la de abrir tiene que ir antes.' }, 400);
-		}
-	} else if (cuerpo.modo !== 'normal') {
-		return json({ error: 'No sé qué hacer con ese modo.' }, 400);
-	}
-
+	const valor = excepcionValida(cambio.base);
 	const guardado = await escribirExcepcion(env, valor);
 
 	if (!guardado.ok) {

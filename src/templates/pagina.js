@@ -117,6 +117,42 @@ function bloqueAcompanantes(bloque) {
 				</div>`;
 }
 
+/**
+ * La carta en el formato que Google entiende (schema.org Menu).
+ *
+ * Sale de menu.json, igual que la carta visible, así que un precio sigue
+ * escribiéndose una sola vez: si cambia, cambia en la página y en lo que lee
+ * Google a la vez. Se incluyen los acompañantes porque también se venden.
+ */
+function menuSchema(menu) {
+	const item = (p, precioFijo) => ({
+		'@type': 'MenuItem',
+		name: p.nombre,
+		...(p.desc ? { description: p.desc } : {}),
+		offers: {
+			'@type': 'Offer',
+			price: (precioFijo ?? p.precio).toFixed(2),
+			priceCurrency: 'USD'
+		}
+	});
+
+	const secciones = menu.grupos.map((g) => ({
+		'@type': 'MenuSection',
+		name: g.titulo,
+		hasMenuItem: g.platos.map((p) => item(p))
+	}));
+
+	for (const bloque of menu.acompanantes || []) {
+		secciones.push({
+			'@type': 'MenuSection',
+			name: bloque.titulo,
+			hasMenuItem: bloque.items.map((i) => item(i, bloque.precioFijo))
+		});
+	}
+
+	return { '@type': 'Menu', name: 'Carta', hasMenuSection: secciones };
+}
+
 /* --- Página ------------------------------------------------------------- */
 
 export function paginaInicio({ sitio, menu, versiculos = [] }) {
@@ -148,6 +184,7 @@ export function paginaInicio({ sitio, menu, versiculos = [] }) {
 		},
 		openingHours: horarioSchema(sitio.horario),
 		acceptsReservations: false,
+		hasMenu: menuSchema(menu),
 		sameAs: [sitio.instagramUrl]
 	};
 
@@ -171,14 +208,21 @@ export function paginaInicio({ sitio, menu, versiculos = [] }) {
 <title>${e(sitio.nombre)} · ${e(sitio.lema)}</title>
 <meta name="description" content="${e(sitio.descripcion)} ${e(horario)}. Ordena al ${e(sitio.telefono)}.">
 <meta name="theme-color" content="#0d6376">
+<link rel="canonical" href="${e(sitio.url)}/">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/logo.png">
+<link rel="manifest" href="site.webmanifest">
 <meta property="og:type" content="restaurant.restaurant">
+<meta property="og:site_name" content="${e(sitio.nombre)}">
+<meta property="og:url" content="${e(sitio.url)}/">
 <meta property="og:title" content="${e(sitio.nombre)} · ${e(sitio.lema)}">
 <meta property="og:description" content="${e(sitio.descripcion)}">
 <meta property="og:image" content="${e(sitio.url)}/assets/img/burger-caramelizado.jpg">
+<meta property="og:image:alt" content="${e(sitio.nombre)}: burger caramelizado recién hecha.">
 <meta property="og:locale" content="es_PR">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${e(sitio.url)}/assets/img/burger-caramelizado.jpg">
 <link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/instrumentsans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/app.css">
@@ -226,6 +270,10 @@ export function paginaInicio({ sitio, menu, versiculos = [] }) {
 </header>
 
 <main id="contenido">
+
+<!-- El aviso del día, si el dueño puso uno desde /panel. Nace oculto: lo
+     enciende app.js cuando hay algo que decir, y se apaga solo a medianoche. -->
+<p class="especial" data-especial hidden></p>
 
 <section class="hero" id="inicio">
 	<div class="envoltura hero__interior">

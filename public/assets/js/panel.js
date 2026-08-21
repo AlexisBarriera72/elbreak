@@ -1,45 +1,70 @@
 /**
  * Panel del dueño.
  *
- * Una clave y tres botones: cerrar hoy, abrir hoy aunque no toque, y deshacer.
- * La clave no se guarda en ningún sitio: se escribe cada vez, porque esto se
- * usa dos o tres veces al mes y una clave guardada en el teléfono es una clave
- * que se puede leer.
+ * Una clave arriba y varios botones, cada uno con lo suyo: cerrar el día,
+ * abrirlo aunque no toque, marcar lo que se acabó y poner el aviso de hoy.
  *
- * Quien decide si la clave vale es la función, no esta página: aquí solo se
- * manda y se enseña la respuesta.
+ * La clave no se guarda en ningún sitio: se escribe cada vez. Esto se usa dos
+ * o tres veces al mes, y una clave guardada en el teléfono es una clave que se
+ * puede leer.
+ *
+ * Cada botón manda solo su parte. La función la mezcla con lo que ya hubiera
+ * hoy, así que marcar un plato agotado no borra el aviso ni el horario.
  */
 
 import { fechaEnZona, horaLegible } from './horario.js';
 
 const ZONA = 'America/Puerto_Rico';
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const formulario = $('[data-panel]');
 const campoClave = $('#clave');
 const campoAbre = $('#abre');
 const campoCierra = $('#cierra');
+const campoEspecial = $('#especial');
 const aviso = $('[data-aviso]');
 const resumen = $('[data-estado-actual]');
-const botones = Array.from(document.querySelectorAll('[data-accion]'));
+const botones = $$('[data-accion]');
+const casillas = $$('[data-agotado]');
 
 function decir(texto, tipo) {
 	aviso.textContent = texto;
 	aviso.dataset.tipo = tipo || 'info';
 }
 
+/** Deja la página contando lo que hay puesto ahora mismo. */
 function pintar(excepcion) {
 	const deHoy = excepcion && excepcion.fecha === fechaEnZona(ZONA);
+	const hoy = deHoy ? excepcion : {};
 
-	if (deHoy && excepcion.modo === 'cerrado') {
-		resumen.textContent =
-			'Hoy está marcado como cerrado. Mañana vuelve solo al horario normal.';
-	} else if (deHoy && excepcion.modo === 'abierto') {
-		resumen.textContent =
-			`Hoy está marcado como abierto de ${horaLegible(excepcion.abre)} a ` +
-			`${horaLegible(excepcion.cierra)}. Mañana vuelve solo al horario normal.`;
+	const partes = [];
+
+	if (hoy.modo === 'cerrado') {
+		partes.push('Hoy está marcado como cerrado.');
+	} else if (hoy.modo === 'abierto') {
+		partes.push(`Hoy abres de ${horaLegible(hoy.abre)} a ${horaLegible(hoy.cierra)}.`);
 	} else {
-		resumen.textContent = 'Hoy el truck sigue su horario normal.';
+		partes.push('Hoy el truck sigue su horario normal.');
+	}
+
+	const agotados = hoy.agotados || [];
+	if (agotados.length === 1) partes.push('Hay 1 plato marcado como agotado.');
+	else if (agotados.length > 1) partes.push(`Hay ${agotados.length} platos marcados como agotados.`);
+
+	if (hoy.especial) partes.push(`Aviso puesto: «${hoy.especial}»`);
+
+	resumen.textContent = partes.join(' ');
+
+	// Y deja los controles reflejando ese estado, para no marcar dos veces.
+	const fuera = new Set(agotados);
+	casillas.forEach((c) => {
+		c.checked = fuera.has(c.value);
+	});
+	campoEspecial.value = hoy.especial || '';
+	if (hoy.modo === 'abierto') {
+		campoAbre.value = hoy.abre;
+		campoCierra.value = hoy.cierra;
 	}
 }
 
@@ -64,10 +89,33 @@ async function consultar() {
 const CONFIRMACION = {
 	cerrado: 'Listo. La página ya avisa de que hoy no sales.',
 	abierto: 'Listo. La página ya dice que hoy abres.',
-	normal: 'Listo. El truck vuelve a su horario normal.'
+	normal: 'Listo. El truck vuelve a su horario normal.',
+	agotados: 'Listo. La carta ya lo marca.',
+	especial: 'Listo.'
 };
 
-async function enviar(modo) {
+/** Qué manda cada botón. Devuelve null si falta algo por rellenar. */
+function cuerpoDe(accion) {
+	if (accion === 'abierto') {
+		if (!campoAbre.value || !campoCierra.value) {
+			decir('Pon la hora de abrir y la de cerrar.', 'error');
+			return null;
+		}
+		return { modo: 'abierto', abre: campoAbre.value, cierra: campoCierra.value };
+	}
+
+	if (accion === 'agotados') {
+		return { agotados: casillas.filter((c) => c.checked).map((c) => c.value) };
+	}
+
+	if (accion === 'especial') {
+		return { especial: campoEspecial.value.trim() };
+	}
+
+	return { modo: accion };
+}
+
+async function enviar(accion) {
 	const clave = campoClave.value;
 
 	if (!clave) {
@@ -76,16 +124,8 @@ async function enviar(modo) {
 		return;
 	}
 
-	const cuerpo = { clave, modo };
-
-	if (modo === 'abierto') {
-		if (!campoAbre.value || !campoCierra.value) {
-			decir('Pon la hora de abrir y la de cerrar.', 'error');
-			return;
-		}
-		cuerpo.abre = campoAbre.value;
-		cuerpo.cierra = campoCierra.value;
-	}
+	const cuerpo = cuerpoDe(accion);
+	if (!cuerpo) return;
 
 	ocupado(true);
 	decir('Guardando…');
@@ -94,7 +134,7 @@ async function enviar(modo) {
 		const respuesta = await fetch('/api/estado', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify(cuerpo)
+			body: JSON.stringify({ clave, ...cuerpo })
 		});
 
 		const datos = await respuesta.json().catch(() => ({}));
@@ -106,7 +146,15 @@ async function enviar(modo) {
 
 		pintar(datos.excepcion);
 		campoClave.value = '';
-		decir(CONFIRMACION[modo], 'bien');
+
+		if (accion === 'especial') {
+			decir(cuerpo.especial ? 'Listo. El aviso ya sale en la portada.' : 'Listo. Aviso quitado.', 'bien');
+		} else if (accion === 'agotados') {
+			const n = cuerpo.agotados.length;
+			decir(n ? `Listo. ${n} marcado${n > 1 ? 's' : ''} como agotado.` : 'Listo. Todo disponible otra vez.', 'bien');
+		} else {
+			decir(CONFIRMACION[accion], 'bien');
+		}
 	} catch (e) {
 		decir('Sin conexión. Inténtalo otra vez.', 'error');
 	} finally {

@@ -5,7 +5,7 @@ Carta y órdenes de [El Break Food Truck](https://instagram.com/el_break_food_tr
 Sitio estático. Sin framework, sin dependencias, sin `node_modules`. El HTML se
 genera a partir de dos archivos de datos y se sube tal cual.
 
-**Peso total: ~685 KB**, fotos y tipografías incluidas.
+**Peso total: ~701 KB**, fotos y tipografías incluidas.
 
 ---
 
@@ -16,7 +16,7 @@ Hace falta **Node 18 o superior**. Nada más — no hay `npm install`.
 ```bash
 npm run dev      # compila y sirve en http://localhost:4321
 npm run build    # genera dist/
-npm test         # 45 pruebas, sin dependencias
+npm test         # 59 pruebas, sin dependencias
 ```
 
 ---
@@ -101,13 +101,20 @@ configurar: funciona desde el primer despliegue. El número al que llegan las
 
 ## Cambiar el horario de un día suelto
 
-Entra en **`/panel`** y escribe la clave. Hay tres botones:
+Entra en **`/panel`** y escribe la clave. Desde ahí se cambia todo lo de hoy:
 
 | Botón | Para qué |
 | --- | --- |
 | **Marcar cerrado** | tocaba trabajar y al final no sales |
 | **Abrir hoy** | una fiesta, un evento, un domingo suelto |
-| **Volver al horario normal** | deshacer lo anterior |
+| **Guardar lo agotado** | se acabó el pulled pork a las 12:30 |
+| **Guardar aviso** | una banda arriba de la portada: «Hoy hay flan» |
+| **Volver al horario normal** | quita el cierre o la apertura |
+| **Comprobar configuración** | dice qué variable falta en Vercel |
+
+Lo agotado se marca con casillas, una por plato, sacadas de `menu.json`: si
+añades un plato a la carta, aparece aquí solo. En la página el plato se atenúa,
+dice «Agotado hoy» y no se puede añadir al carrito.
 
 Al abrir un día que no toca se proponen las horas de siempre (11:00 am – 2:00
 pm), pero puedes cambiarlas: si el evento es de noche, pones 5:00 pm – 10:00 pm
@@ -211,13 +218,17 @@ public/                   ← se copia tal cual a dist/
   assets/js/carrito.js    ← carrito y mensaje de WhatsApp
   assets/js/formato.js    ← formato de precios
   assets/js/app.js        ← conecta todo con la página
-  assets/js/panel.js      ← los tres botones de /panel
+  assets/js/panel.js      ← los botones de /panel
+  assets/img/favicon.svg  ← marca simple, legible a 16px
   assets/img/  fonts/
   _headers                ← caché y seguridad (Cloudflare y Netlify)
 
 api/estado.js             ← lee y escribe la excepción del día
+                            (horario, agotados y aviso, todo con su fecha)
 
-test/                     ← 45 pruebas con el runner de Node
+El build genera además robots.txt, sitemap.xml y site.webmanifest.
+
+test/                     ← 59 pruebas con el runner de Node
 ```
 
 Cuatro decisiones que conviene no deshacer:

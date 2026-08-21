@@ -68,7 +68,12 @@ async function construir() {
 	await writeFile(join(salida, '404.html'), pagina404(sitio), 'utf8');
 
 	// Panel del dueño. Ni se enlaza ni se indexa.
-	await writeFile(join(salida, 'panel.html'), paginaPanel(sitio), 'utf8');
+	await writeFile(join(salida, 'panel.html'), paginaPanel(sitio, menu), 'utf8');
+
+	// Para buscadores y para poder instalar el sitio en el teléfono.
+	await writeFile(join(salida, 'robots.txt'), robots(sitio), 'utf8');
+	await writeFile(join(salida, 'sitemap.xml'), sitemap(sitio), 'utf8');
+	await writeFile(join(salida, 'site.webmanifest'), manifiesto(sitio), 'utf8');
 
 	const bytes = await pesar(salida);
 	const archivos = await inventario(salida);
@@ -81,6 +86,55 @@ async function construir() {
 	console.log(`  ${(bytes / 1024).toFixed(1).padStart(7)} KB  total en dist/\n`);
 }
 
+/** Solo hay una página pública. El panel se queda fuera del índice. */
+function robots(sitio) {
+	return `User-agent: *
+Allow: /
+Disallow: /panel
+
+Sitemap: ${sitio.url}/sitemap.xml
+`;
+}
+
+function sitemap(sitio) {
+	const hoy = new Date().toISOString().slice(0, 10);
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+	<url>
+		<loc>${sitio.url}/</loc>
+		<lastmod>${hoy}</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>1.0</priority>
+	</url>
+</urlset>
+`;
+}
+
+/** Deja añadir el sitio a la pantalla de inicio como si fuera una app. */
+function manifiesto(sitio) {
+	return JSON.stringify(
+		{
+			name: sitio.nombre,
+			short_name: 'El Break',
+			description: sitio.descripcion,
+			lang: 'es',
+			start_url: '/',
+			scope: '/',
+			display: 'standalone',
+			orientation: 'portrait',
+			background_color: '#fdf4e3',
+			theme_color: '#0d6376',
+			icons: [
+				{ src: '/assets/img/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
+				{ src: '/assets/img/favicon.png', sizes: '64x64', type: 'image/png' },
+				{ src: '/assets/img/logo.png', sizes: '160x160', type: 'image/png' }
+			]
+		},
+		null,
+		'	'
+	);
+}
+
 function pagina404(sitio) {
 	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 	return `<!DOCTYPE html>
@@ -91,6 +145,7 @@ function pagina404(sitio) {
 <title>Esa página no existe · ${esc(sitio.nombre)}</title>
 <meta name="description" content="La página que buscas no existe. La carta, los bowls y el horario están en la portada.">
 <meta name="robots" content="noindex">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>

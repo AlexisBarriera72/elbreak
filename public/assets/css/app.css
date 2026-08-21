@@ -1735,3 +1735,35 @@ a.dato__valor:hover {
 		break-inside: avoid;
 	}
 }
+
+/* --- Aviso del día y platos agotados ------------------------------------
+   Los dos los enciende app.js con lo que el dueño marcó en /panel, y los dos
+   se apagan solos a medianoche porque lo guardado lleva la fecha dentro.    */
+
+.especial {
+	margin: 0;
+	padding: 0.85rem var(--canal);
+	background: var(--oro);
+	color: var(--tinta);
+	font-weight: 700;
+	text-align: center;
+	font-size: 0.95rem;
+	line-height: 1.4;
+}
+
+/* El plato sigue en la carta: interesa que se vea que existe, solo que hoy
+   no queda. Por eso se atenúa en vez de esconderse. */
+[data-agotado='si'] {
+	opacity: 0.55;
+}
+
+[data-agotado='si'] .plato__foto img {
+	filter: grayscale(1);
+}
+
+.agregar[disabled] {
+	cursor: not-allowed;
+	background: var(--linea);
+	color: var(--tinta-suave);
+	border-color: transparent;
+}
