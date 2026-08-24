@@ -18,3 +18,7 @@ npm-debug.log*
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Herramientas locales del editor. Se quedan en el disco, no en el repo.
+.claude/
+.cursor/
