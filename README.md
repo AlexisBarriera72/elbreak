@@ -249,7 +249,6 @@ public/                   ← se copia tal cual a dist/
   assets/js/formato.js    ← formato de precios
   assets/js/app.js        ← conecta todo con la página
   assets/js/panel.js      ← los botones de /panel
-  assets/img/favicon.svg  ← marca simple, legible a 16px
   assets/img/  fonts/
   _headers                ← caché y seguridad (Cloudflare y Netlify)
 

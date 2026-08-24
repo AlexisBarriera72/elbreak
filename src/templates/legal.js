@@ -27,7 +27,6 @@ export function paginaLegal(sitio, { titulo, descripcion, cuerpo, actualizado })
 <title>${e(titulo)} · ${e(sitio.nombre)}</title>
 <meta name="description" content="${e(descripcion)}">
 <meta name="theme-color" content="#0d6376">
-<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>

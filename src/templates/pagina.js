@@ -209,7 +209,6 @@ export function paginaInicio({ sitio, menu, versiculos = [] }) {
 <meta name="description" content="${e(sitio.descripcion)} ${e(horario)}. Ordena al ${e(sitio.telefono)}.">
 <meta name="theme-color" content="#0d6376">
 <link rel="canonical" href="${e(sitio.url)}/">
-<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/logo.png">
 <link rel="manifest" href="site.webmanifest">

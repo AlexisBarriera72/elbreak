@@ -69,7 +69,6 @@ export function paginaPanel(sitio, menu) {
 <title>Panel · ${e(sitio.nombre)}</title>
 <meta name="description" content="Panel privado del dueño.">
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>

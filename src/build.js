@@ -158,7 +158,6 @@ function manifiesto(sitio) {
 			background_color: '#fdf4e3',
 			theme_color: '#0d6376',
 			icons: [
-				{ src: '/assets/img/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
 				{ src: '/assets/img/favicon.png', sizes: '64x64', type: 'image/png' },
 				{ src: '/assets/img/logo.png', sizes: '160x160', type: 'image/png' }
 			]
@@ -178,7 +177,6 @@ function pagina404(sitio) {
 <title>Esa página no existe · ${esc(sitio.nombre)}</title>
 <meta name="description" content="La página que buscas no existe. La carta, los bowls y el horario están en la portada.">
 <meta name="robots" content="noindex">
-<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/img/favicon.png" type="image/png">
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
