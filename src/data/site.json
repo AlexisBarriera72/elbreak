@@ -23,6 +23,8 @@
 
   "avisoAlergias": "Toda salsa es hecha a mano. Si eres alérgico a algo, notifícalo al ordenar.",
 
+  "legalActualizado": "2026-08-13",
+
   "zonaHoraria": "America/Puerto_Rico",
   "horario": {
     "3": { "abre": "11:00", "cierra": "14:00" },

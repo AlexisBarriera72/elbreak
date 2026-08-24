@@ -14,6 +14,8 @@ import { dirname, join, relative } from 'node:path';
 
 import { paginaInicio } from './templates/pagina.js';
 import { paginaPanel } from './templates/panel.js';
+import { paginaPrivacidad, paginaTerminos } from './templates/legal.js';
+import { conCSP } from './csp.js';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, '..');
@@ -62,13 +64,19 @@ async function construir() {
 	await cp(join(raiz, 'public'), salida, { recursive: true });
 
 	const html = paginaInicio({ sitio, menu, versiculos });
-	await writeFile(join(salida, 'index.html'), html, 'utf8');
+	await writeFile(join(salida, 'index.html'), conCSP(html), 'utf8');
 
 	// 404 con la misma cabecera y un camino de vuelta.
-	await writeFile(join(salida, '404.html'), pagina404(sitio), 'utf8');
+	await writeFile(join(salida, '404.html'), conCSP(pagina404(sitio)), 'utf8');
 
 	// Panel del dueño. Ni se enlaza ni se indexa.
-	await writeFile(join(salida, 'panel.html'), paginaPanel(sitio, menu), 'utf8');
+	await writeFile(join(salida, 'panel.html'), conCSP(paginaPanel(sitio, menu)), 'utf8');
+
+	// Privacidad y términos. La fecha sale de site.json, no del día en que se
+	// compila: cambiar una coma del código no es cambiar la política.
+	const actualizado = fechaLarga(sitio.legalActualizado);
+	await writeFile(join(salida, 'privacidad.html'), conCSP(paginaPrivacidad(sitio, actualizado)), 'utf8');
+	await writeFile(join(salida, 'terminos.html'), conCSP(paginaTerminos(sitio, actualizado)), 'utf8');
 
 	// Para buscadores y para poder instalar el sitio en el teléfono.
 	await writeFile(join(salida, 'robots.txt'), robots(sitio), 'utf8');
@@ -86,7 +94,16 @@ async function construir() {
 	console.log(`  ${(bytes / 1024).toFixed(1).padStart(7)} KB  total en dist/\n`);
 }
 
-/** Solo hay una página pública. El panel se queda fuera del índice. */
+
+/** "2026-08-13" -> "13 de agosto de 2026" */
+function fechaLarga(iso) {
+	const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
+		'septiembre','octubre','noviembre','diciembre'];
+	const [a, m, d] = String(iso).split('-').map(Number);
+	return `${d} de ${meses[m - 1]} de ${a}`;
+}
+
+/** Las páginas públicas. El panel se queda fuera del índice. */
 function robots(sitio) {
 	return `User-agent: *
 Allow: /
@@ -98,16 +115,32 @@ Sitemap: ${sitio.url}/sitemap.xml
 
 function sitemap(sitio) {
 	const hoy = new Date().toISOString().slice(0, 10);
-	return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-	<url>
-		<loc>${sitio.url}/</loc>
-		<lastmod>${hoy}</lastmod>
-		<changefreq>weekly</changefreq>
-		<priority>1.0</priority>
-	</url>
-</urlset>
-`;
+	const paginas = [
+		{ ruta: '/', cada: 'weekly', peso: '1.0', cuando: hoy },
+		{ ruta: '/privacidad', cada: 'yearly', peso: '0.3', cuando: sitio.legalActualizado },
+		{ ruta: '/terminos', cada: 'yearly', peso: '0.3', cuando: sitio.legalActualizado }
+	];
+
+	const urls = paginas
+		.map((p) =>
+			[
+				'	<url>',
+				`		<loc>${sitio.url}${p.ruta}</loc>`,
+				`		<lastmod>${p.cuando}</lastmod>`,
+				`		<changefreq>${p.cada}</changefreq>`,
+				`		<priority>${p.peso}</priority>`,
+				'	</url>'
+			].join('\n')
+		)
+		.join('\n');
+
+	return [
+		'<?xml version=\"1.0\" encoding=\"UTF-8\"?>',
+		'<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">',
+		urls,
+		'</urlset>',
+		''
+	].join('\n');
 }
 
 /** Deja añadir el sitio a la pantalla de inicio como si fuera una app. */

@@ -493,6 +493,9 @@ export function paginaInicio({ sitio, menu, versiculos = [] }) {
 		<div class="pie__legal">
 			<span>${e(horario)}</span>
 			<span>&copy; ${new Date().getFullYear()} ${e(sitio.nombre)} · ${e(sitio.ciudad)}, Puerto Rico</span>
+			<span class="pie__enlaces">
+				<a href="/privacidad">Privacidad</a> · <a href="/terminos">Términos</a>
+			</span>
 		</div>
 	</div>
 </footer>

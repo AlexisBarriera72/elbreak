@@ -5,7 +5,7 @@ Carta y órdenes de [El Break Food Truck](https://instagram.com/el_break_food_tr
 Sitio estático. Sin framework, sin dependencias, sin `node_modules`. El HTML se
 genera a partir de dos archivos de datos y se sube tal cual.
 
-**Peso total: ~701 KB**, fotos y tipografías incluidas.
+**Peso total: ~711 KB**, fotos y tipografías incluidas.
 
 ---
 
@@ -16,7 +16,7 @@ Hace falta **Node 18 o superior**. Nada más — no hay `npm install`.
 ```bash
 npm run dev      # compila y sirve en http://localhost:4321
 npm run build    # genera dist/
-npm test         # 59 pruebas, sin dependencias
+npm test         # 66 pruebas, sin dependencias
 ```
 
 ---
@@ -169,6 +169,34 @@ el mismo día ve el mismo versículo, y no cambia al recargar.
 
 ---
 
+## Privacidad y términos
+
+`/privacidad` y `/terminos` se generan desde `site.json`, así que el teléfono y
+la dirección no se quedan viejos en un rincón. La fecha de «Actualizado el…»
+sale del campo `legalActualizado`, **no** del día de la compilación: cambiar una
+coma del código no es cambiar la política.
+
+La página de privacidad es corta porque es verdad que el sitio no recoge nada:
+sin cookies, sin analítica, sin servidor. El carrito vive en el navegador del
+cliente y su nombre viaja dentro del mensaje de WhatsApp que manda él.
+
+> Los términos son un **borrador en lenguaje llano**, no un documento revisado
+> por un abogado. Si alguna vez importa de verdad, que lo mire uno de Puerto
+> Rico — sobre todo el arbitraje y la indemnización.
+
+### Content-Security-Policy
+
+`src/csp.js` calcula los hashes de los `<script>` en línea sobre el HTML ya
+generado y mete la política en cada página. Es defensa en profundidad: si algún
+día se colara texto sin escapar, el navegador no lo ejecuta.
+
+**Si añades un `<script>` en línea, no toques nada**: el hash se calcula solo.
+Lo que no hay que hacer nunca es meter `'unsafe-inline'` en `script-src` para
+salir del paso — eso desactiva justamente lo que protege. Hay pruebas que fallan
+si un script queda sin cubrir.
+
+---
+
 ## Publicar
 
 El sitio es estático y corre igual en los tres.
@@ -210,6 +238,8 @@ src/
   dev.js                  ← servidor local
   templates/pagina.js     ← el HTML
   templates/panel.js      ← la página de /panel
+  templates/legal.js      ← /privacidad y /terminos
+  csp.js                  ← calcula la Content-Security-Policy
 
 public/                   ← se copia tal cual a dist/
   assets/css/app.css
@@ -228,7 +258,7 @@ api/estado.js             ← lee y escribe la excepción del día
 
 El build genera además robots.txt, sitemap.xml y site.webmanifest.
 
-test/                     ← 59 pruebas con el runner de Node
+test/                     ← 66 pruebas con el runner de Node
 ```
 
 Cuatro decisiones que conviene no deshacer:

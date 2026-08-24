@@ -1767,3 +1767,41 @@ a.dato__valor:hover {
 	color: var(--tinta-suave);
 	border-color: transparent;
 }
+
+/* --- Páginas legales ----------------------------------------------------- */
+
+.legal {
+	max-width: 68ch;
+}
+
+.legal__fecha {
+	margin: 0.5rem 0 2.5rem;
+	font-size: 0.9rem;
+	color: var(--tinta-suave);
+}
+
+.legal__titulo {
+	font-size: 1.15rem;
+	margin: 2.25rem 0 0.6rem;
+}
+
+.legal__aviso {
+	margin: 0 0 2rem;
+	padding: 1rem 1.15rem;
+	background: rgba(255, 194, 75, 0.25);
+	border-radius: var(--radio);
+	font-size: 0.95rem;
+}
+
+.legal .contenido + .contenido {
+	margin-top: 0.9rem;
+}
+
+.legal__volver {
+	margin-top: 3rem;
+}
+
+.pie__enlaces {
+	display: block;
+	margin-top: 0.35rem;
+}
